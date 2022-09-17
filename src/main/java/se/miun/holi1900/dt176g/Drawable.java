@@ -1,6 +1,6 @@
 package se.miun.holi1900.dt176g;
 
-public interface Drawable {
-    void draw();
+@FunctionalInterface
+interface Drawable {
     void draw(java.awt.Graphics g);
 }

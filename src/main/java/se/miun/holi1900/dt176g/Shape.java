@@ -24,7 +24,7 @@ public abstract class Shape implements Drawable{
     protected int maxSize;
     protected List<Point> points = new ArrayList<>(maxSize);
     private String color;
-    public Shape(double x, double y, String color) {
+    public Shape(int x, int y, String color) {
         this(new Point(x,y), color);
 
     }
@@ -59,7 +59,7 @@ public abstract class Shape implements Drawable{
      * @param x x coordinate
      * @param y coordinates
      */
-    public void addPoint(double x, double y){
+    public void addPoint(int x, int y){
         this.addPoint(new Point(x, y));
     }
     /**
@@ -120,10 +120,6 @@ public abstract class Shape implements Drawable{
     return Math.pow(sumOfSquares, 0.5);
     }*/
 
-    @Override
-    public void draw() {
-        System.out.println("A " + color + " " + getClass().getSimpleName() + "has been drawn");
-    }
     @Override
     public void draw(Graphics g) {
         // TODO Auto-generated method stub
