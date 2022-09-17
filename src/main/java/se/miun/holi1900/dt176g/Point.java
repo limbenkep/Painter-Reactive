@@ -1,4 +1,4 @@
-
+package se.miun.holi1900.dt176g;
 /**
  * <h1>Point</h1>
  * This Class is defines the state and behaviours of a point.
