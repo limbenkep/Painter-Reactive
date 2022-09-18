@@ -13,10 +13,10 @@ package se.miun.holi1900.dt176g;
 public class Point {
     private int x,y;
 
-    public Point() {
+    /*public Point() {
         x = 0;
         y = 0;
-    }
+    }*/
 
     public Point(int x, int y) {
         this.x = x;
@@ -42,7 +42,7 @@ public class Point {
     @Override
     public boolean equals(Object obj) {
         Point p = (Point) obj;
-        return (x == p.getX() && y == p.getY());
+        return (obj.getClass()== this.getClass() && x == p.getX() && y == p.getY());
     }
 
     public String toString(){
