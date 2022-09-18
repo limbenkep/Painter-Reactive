@@ -17,8 +17,9 @@ import java.util.List;
  * <p>
  *
  *
- * @author Lima Honorine (holi1900)
+ * @author Lima Honorine
  * @version 1.0
+ * @since 	2022-09-18
  */
 public abstract class Shape implements Drawable{
     protected int maxSize;

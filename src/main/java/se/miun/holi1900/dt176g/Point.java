@@ -7,8 +7,9 @@ package se.miun.holi1900.dt176g;
  * Methods getter and setters for x and y, toString which returns x and y values in a String
  *
  *
- * @author Lima Honorine (holi1900)
+ * @author Lima Honorine
  * @version 1.0
+ * @since 	2022-09-18
  */
 public class Point {
     private int x,y;
