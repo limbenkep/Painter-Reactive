@@ -22,9 +22,14 @@ import java.util.List;
  * @since 	2022-09-18
  */
 public abstract class Shape implements Drawable{
-    protected int maxSize;
-    protected List<Point> points = new ArrayList<>(maxSize);
+    protected int maxPointsCount; //The number of required to make the shape
+    protected List<Point> points = new ArrayList<>(maxPointsCount);
     private String color;
+    /**
+     * Constructor takes a point and color string
+     * shape requires at least one point to be created
+     */
+
     public Shape(int x, int y, String color) {
         this(new Point(x,y), color);
 
@@ -53,7 +58,7 @@ public abstract class Shape implements Drawable{
     public abstract double getArea();
 
     public abstract String toString();
-    public abstract String getsaveInfo();
+    public abstract String getInfoToBeSaved();
 
     /**
      * This function receives x and y values used to create a point object assigns the point object to position 2 of the Point array
@@ -68,63 +73,24 @@ public abstract class Shape implements Drawable{
      * @param point
      */
     public void addPoint(Point point){
-        if(points.size()<maxSize){
+        if(points.size()< maxPointsCount){
             this.points.add(1, point);
         }
-        if(points.size()==maxSize){
+        if(points.size()== maxPointsCount){
             this.points.remove(1);
             this.points.add(1, point);
         }
     }
 
     public boolean hasEndPoint(){
-        return points.size() >= maxSize;
+        return points.size() >= maxPointsCount;
     }
 
-    /*public Color stringToColor(){
-        Color myColor;
-        try {
-            Field field = Class.forName("java.awt.Color").getField(color);
-            myColor = (Color)field.get(null);
-        } catch (Exception e) {
-            myColor = null; // Not defined
-        }
-        return myColor;
-    }*/
 
-
-
-    /**
-     * function computes the difference between the x-cordinates of two points
-     * @return difference as a double
-     *
-    public double getHorizontalDistance(){
-    return points[0].getX() - points[1].getX();
-    }
-
-    /**
-     * function computes the difference between the y-cordinates of two points
-     * @return difference as a double
-     *
-    public double getVerticalDistance(){
-    return points[0].getY() - points[1].getY();
-    }
-
-    /**
-     * function computes the distance between the two points by computing the sum of the squares of
-     * the horizontal and vertical distances and then finding the square root.
-     * @return difference as a double
-     *
-    public double getDistanceBetweenPoints(){
-
-    double sumOfSquares = (Math.pow(getHorizontalDistance(), 2) + Math.pow(getVerticalDistance(), 2));
-    return Math.pow(sumOfSquares, 0.5);
-    }*/
-
-    @Override
+    /*@Override
     public void draw(Graphics g) {
         // TODO Auto-generated method stub
 
-    }
+    }*/
 
 }

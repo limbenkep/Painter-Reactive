@@ -6,18 +6,12 @@ package se.miun.holi1900.dt176g;
  * Defines two constructors, one tha takes no parameter and one that takes the x and y values as parameters.
  * Methods getter and setters for x and y, toString which returns x and y values in a String
  *
- *
  * @author Lima Honorine
  * @version 1.0
  * @since 	2022-09-18
  */
 public class Point {
     private int x,y;
-
-    /*public Point() {
-        x = 0;
-        y = 0;
-    }*/
 
     public Point(int x, int y) {
         this.x = x;
