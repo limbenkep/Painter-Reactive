@@ -1,21 +1,20 @@
 package se.miun.holi1900.dt176g;
 
-import io.reactivex.rxjava3.core.Observable;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ToolBar extends JToolBar {
     private JPanel colorPanelSContainer;
+    private MouseListener mouseListener;
 
+    private OnToolBarColorChanged colorChangeListener;
     List<JPanel> colorPanels = new ArrayList<>();
-    private JComboBox<String> shapeOption;
+    private JComboBox<String> shapeOptions;
 
     public ToolBar(MainFrame frame) {
         this.init(frame);
@@ -23,12 +22,23 @@ public class ToolBar extends JToolBar {
 
     private void init(MainFrame frame){
         colorPanelSContainer = new JPanel(new GridLayout(1,6));
-        shapeOption = new JComboBox<>();
+        shapeOptions = new JComboBox<>();
+        setColorPanels(frame);
+        loadShapeOptions();
 
         this.add(colorPanelSContainer);
-        this.add(shapeOption);
+        this.add(shapeOptions);
+    }
+    private String getSelectedShapeOption(){
+        String shape = shapeOptions.getSelectedItem().toString();
+        System.out.println("selected shape option: " + shape);
+        return  shape;
     }
 
+    public void setMouseListener(MouseListener mouseListener) {
+        System.out.println("ToolBar.setMouseListener");
+        this.mouseListener = mouseListener;
+    }
 
     /**
      * create JPanel for each color object in colors List and store them in the colorPanels List
@@ -46,20 +56,50 @@ public class ToolBar extends JToolBar {
         for (Color color : colors) {
             JPanel panel = new JPanel();
             panel.setBackground(color);
-            //panel.addMouseListener(l);
+            panel.addMouseListener(l);
+            colorPanels.add(panel);
             colorPanelSContainer.add(panel);
         }
+
     }
 
-   /* MouseListener l = new MouseAdapter(){
+    /**
+     * creates JCombobox containing different shape options user can create
+     */
+    private void loadShapeOptions(){
+        shapeOptions.addItem("Rectangle");
+        shapeOptions.addItem("Oval");
+        shapeOptions.addItem("Straight line");
+        shapeOptions.addItem("Freehand shape");
+        shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
+        shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
+    }
+
+    MouseListener l = new MouseAdapter(){
         @Override
         public void mouseClicked(MouseEvent e) {
             for (JPanel colorPanel : colorPanels) {
-                if (e.getComponent() == colorPanel) {
-                    Color select = colorPanel.getBackground();
-                    selectedColor.setBackground(select);
+                if (e.getComponent().equals(colorPanel)) {
+                    Color selectedColor = colorPanel.getBackground();
+                    System.out.println("ToolBar.mouseClicked selected color " +selectedColor);
+                    //selectedColor.setBackground(select);
+                    colorChangeListener.currentColor(selectedColor);
                 }
             }
         }
-    };*/
+    };
+
+    public void setColorChangeListener(OnToolBarColorChanged colorChangeListener) {
+        this.colorChangeListener = colorChangeListener;
+    }
+
+    public Color getColor(JPanel panel){
+        for (JPanel colorPanel : colorPanels) {
+            if (panel == colorPanel) {
+                return colorPanel.getBackground();
+            }
+        }
+        return null;
+    }
+
 }
