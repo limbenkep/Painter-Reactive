@@ -83,32 +83,6 @@ public class Rectangle extends Shape {
     }
 
     /**
-     * Computes the area of a rectangle as width * height and
-     * returns area as a double
-     */
-    @Override
-    public double getArea() {
-
-        if(hasEndPoint()){
-            return getHeight()*getWidth();
-        }
-        return -1;
-    }
-
-    /**
-     * Computes the surface area of a rectangle as (width + height)/2 and
-     * returns area as a double
-     */
-    @Override
-    public double getCircumference() {
-
-        if(hasEndPoint()){
-            return (getHeight() + getWidth()) * 2;
-        }
-        return -1;
-    }
-
-    /**
      * returns a String data to be written to file when shape is to be saved to file
      */
     @Override

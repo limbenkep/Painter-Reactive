@@ -32,6 +32,11 @@ public class DrawingPanel extends JPanel {
         return drawing;
     }
 
+    public void addShapeToDrawing(Shape shape){
+        drawing.addShape(shape);
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
 

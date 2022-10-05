@@ -45,17 +45,6 @@ public abstract class Shape implements Drawable{
         this.color = color;
     }
 
-    /**
-     *
-     * @return circumference of the shape as a double. To be implemented by each shape type class
-     */
-    public abstract double getCircumference();
-
-    /**
-     *
-     * @return area of the shape as a double. To be implemented by each shape type class
-     */
-    public abstract double getArea();
 
     public abstract String toString();
     public abstract String getInfoToBeSaved();

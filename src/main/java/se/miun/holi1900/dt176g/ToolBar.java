@@ -29,7 +29,7 @@ public class ToolBar extends JToolBar {
         this.add(colorPanelSContainer);
         this.add(shapeOptions);
     }
-    private String getSelectedShapeOption(){
+    public String getSelectedShapeOption(){
         String shape = shapeOptions.getSelectedItem().toString();
         System.out.println("selected shape option: " + shape);
         return  shape;
@@ -69,8 +69,8 @@ public class ToolBar extends JToolBar {
     private void loadShapeOptions(){
         shapeOptions.addItem("Rectangle");
         shapeOptions.addItem("Oval");
-        shapeOptions.addItem("Straight line");
-        shapeOptions.addItem("Freehand shape");
+        shapeOptions.addItem("Line");
+        //shapeOptions.addItem("Freehand shape");
         shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
         shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
     }

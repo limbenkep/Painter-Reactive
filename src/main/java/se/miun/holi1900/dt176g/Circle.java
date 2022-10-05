@@ -46,31 +46,6 @@ public class Circle extends Shape {
         }
         return-1;
     }
-    /**
-     * computes area of the circle if the endpoint has been added else returns -1
-     * returns area as a double
-     */
-    @Override
-    public double getArea() {
-
-        if(hasEndPoint()){
-            return PI*(Math.pow(getRadius(), 2));
-        }
-
-        return -1;
-    }
-
-    /**
-     * computes circumference of the circle if the endpoint has been added else returns -1
-     * returns circumference as a double
-     */
-    @Override
-    public double getCircumference() {
-        if(hasEndPoint()){
-            return 2*PI*getRadius();
-        }
-        return -1;
-    }
 
     /**
      * returns the points, radius, colors of the cirle in single a String
