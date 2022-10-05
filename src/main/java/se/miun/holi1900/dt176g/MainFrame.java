@@ -127,13 +127,13 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         System.out.println("In mousePressed");
         Point p1 = new Point(pressed.getX(), pressed.getY());
         if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
-            shape = new Rectangle(p1, StringColor.getHexColorString(selectedColor));
+            shape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
             System.out.println("First point of rectangle[" + p1 + "]");
         }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
-            System.out.println(" selected color; " + StringColor.getHexColorString(selectedColor));
-            shape = new Circle(p1, StringColor.getHexColorString(selectedColor));
+            System.out.println(" selected color; " + Utils.getHexColorString(selectedColor));
+            shape = new Circle(p1, Utils.getHexColorString(selectedColor));
         }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
-            shape = new Line(p1, StringColor.getHexColorString(selectedColor));
+            shape = new Line(p1, Utils.getHexColorString(selectedColor));
         }
 
         System.out.println("In mouseReleased");

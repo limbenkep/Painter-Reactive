@@ -14,7 +14,7 @@ import java.awt.*;
  * Utility class to convert Color object to html color string (#xxxxxxx)
  * 
  */
-public class StringColor {
+public class Utils {
 	/**
 	 * @param color color to convert to hex string
 	 * @return hex string value of a color
