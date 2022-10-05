@@ -1,5 +1,6 @@
 package se.miun.holi1900.dt176g;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -48,7 +49,7 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
 
         // default window-size.
-        this.setSize(1200, 900);
+        this.setSize(1200, 800);
         // application closes when the "x" in the upper-right corner is clicked.
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -60,62 +61,14 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
         initComponents();
 
-        drawingPanel.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                cordinates.setX(e.getX());
-                cordinates.setY(e.getY());
-                loadCoordinateInfo();
-            }
-        });
+        Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
+        Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
+        Observable<List<MouseEvent>> mouseDraw = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
+        Disposable disposable1 = mouseDraw.subscribe(s->drawShape(s.get(0), s.get(1)));
 
-        drawingPanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                System.out.println("In mousePressed");
-                Point p1 = new Point(e.getX(), e.getY());
-                if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
-                    shape = new Rectangle(p1,
-                            StringColor.getHexColorString(selectedColor));
-                    System.out.println("First point of rectangle[" + p1 +
-                    "]");
-                } else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
-                    System.out.println(" selected color; " + StringColor.getHexColorString(selectedColor));
-                    shape = new Circle(p1, StringColor.getHexColorString(selectedColor));
-                           // StringColor.getHexColorString(selectedColor));
-                    // System.out.println("First point of circle[" + p1 + "]");
-                }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
-                    shape = new Line(p1, StringColor.getHexColorString(selectedColor));
-                }
-            }
+        Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
+        Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
 
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                System.out.println("In mouseReleased");
-                Point p2 = new Point(e.getX(), e.getY());
-                shape.addPoint(p2);
-                drawingPanel.addShapeToDrawing(shape);
-                /*if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
-                    rectangle.addPoint(p2);
-                    drawingPanel.addShapeToDrawing(rectangle);
-                    // rectangle.draw(graphics);
-                    System.out.println("Second point of rectangle[" + p2 + "]");
-                    // System.out.println(rectangle);
-
-
-                } else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
-                    circle.addPoint(p2);
-                    // System.out.println("Second point of circle[" + p2 + "]");
-                    // System.out.println(circle);
-                    drawingPanel.addShapeToDrawing(circle);
-                }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
-                    line.addPoint(p2);
-                    drawingPanel.addShapeToDrawing(line);
-                }*/
-            }
-        });
-
-    //});
     }
 
     private void initComponents(){
@@ -124,8 +77,9 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         //Creates menu bar and adds it to the MainFrame
         this.setJMenuBar(new Menu(this));
 
-        //set default color to black
+        //set default selected color to black
         selectedColor = Color.black;
+
         // Creates toolbar containing color and shape tools and adds it to the MainFrame
         toolBar = new ToolBar(this);
         toolBar.setColorChangeListener(this);
@@ -135,17 +89,15 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         drawingPanel = new DrawingPanel();
         drawingPanel.setBounds(0, 0, getWidth(), getHeight());
         this.getContentPane().add(drawingPanel, BorderLayout.CENTER);
-        //this.getContentPane().add(scrollPane, BorderLayout.CENTER);
 
         //Creates endPageBar and adds it to the MainFrame.
-        //This displays the selected color and current coordinates
+        //This displays the selected color and current coordinates of the cursor
         this.setJMenuBar(new Menu(this));
         endPageBar = new JPanel(new BorderLayout());
         selectedColorPanelContainer = new JPanel();
         selectedColorPanelContainer.setLayout(new BoxLayout(selectedColorPanelContainer ,BoxLayout.X_AXIS));
         endPageBar = new JPanel();
         endPageBar.setLayout(new BoxLayout(endPageBar, BoxLayout.X_AXIS));
-
         cordinates = new Point(0,0); //default coordinates is 0,0
         //Add cordinateLabel and selectedColorPanel to container enPageBar JPanel
         cordinateLabel = new JLabel();
@@ -162,7 +114,53 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
     };
 
-    private Observable<List<MouseEvent>> mousePressedAndReleaseObservable(Observable<MouseEvent> press, Observable<MouseEvent> release){
+    /**
+     * Draws shape from coordinate from mousePressed and mouseRelease events.
+     * Gets selected shape and color from toolbar and draw the selected shape
+     * using selected color.
+     * Gets first coordinate from first passed event and second coordinate
+     * from second passed event.
+     * @param pressed mousePressed MouseEvent
+     * @param released mouseReleased MouseEvent
+     */
+    private void drawShape(MouseEvent pressed, MouseEvent released){
+        System.out.println("In mousePressed");
+        Point p1 = new Point(pressed.getX(), pressed.getY());
+        if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
+            shape = new Rectangle(p1, StringColor.getHexColorString(selectedColor));
+            System.out.println("First point of rectangle[" + p1 + "]");
+        }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
+            System.out.println(" selected color; " + StringColor.getHexColorString(selectedColor));
+            shape = new Circle(p1, StringColor.getHexColorString(selectedColor));
+        }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
+            shape = new Line(p1, StringColor.getHexColorString(selectedColor));
+        }
+
+        System.out.println("In mouseReleased");
+        Point p2 = new Point(released.getX(), released.getY());
+        shape.addPoint(p2);
+        drawingPanel.addShapeToDrawing(shape);
+    }
+
+    /**
+     * updates the displayed current coordinates with point from passed MouseEvents
+     * @param e MouseEvent
+     */
+    private void updateCoordinatesOnMouseMoved(MouseEvent e){
+        cordinates.setX(e.getX());
+        cordinates.setY(e.getY());
+        loadCoordinateInfo();
+    }
+
+    /**
+     * Zips emissions from two MouseEvent Observables into a single
+     * emission of a list of the two emissions
+     * @param press first Observable
+     * @param release second Observable
+     * @return an Observable of a List of MouseEvents
+     */
+    private Observable<List<MouseEvent>> mousePressedAndReleaseObservable(
+            Observable<MouseEvent> press, Observable<MouseEvent> release){
         return Observable.zip(press, release, (p, r) ->{
             List<MouseEvent> events = new ArrayList<>();
             events.add(p);
@@ -170,6 +168,13 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
             return events;
         });
     }
+
+    /**
+     * Receives a DrawingPanel and creates an observable that wraps a MouseListener to the DrawingPanel
+     * the Observable emits MouseEvent when the MouseListener emits an event on mousePressed
+     * @param panel DrawingPanel to be observed
+     * @return Observable with emission of type MouseEvent
+     */
     private Observable<MouseEvent> mousePressedObservable(DrawingPanel panel){
         return Observable.create(emitter -> {
             panel.addMouseListener(new MouseAdapter() {
@@ -181,6 +186,12 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         });
     }
 
+    /**
+     * Receives a DrawingPanel and creates an observable that wraps a MouseListener to the DrawingPanel
+     * the Observable emits MouseEvent when the MouseListener emits an event on mouseReleased
+     * @param panel DrawingPanel to be observed
+     * @return Observable with emission of type MouseEvent
+     */
     private Observable<MouseEvent> mouseReleasedObservable(DrawingPanel panel){
         return Observable.create(emitter -> {
             panel.addMouseListener(new MouseAdapter() {
@@ -203,92 +214,21 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         });
     }
 
-
-
-    private JScrollPane makeDisplayArea() {
-        drawingPanel = new DrawingPanel();
-        drawingPanel.setPreferredSize(new Dimension(600, 600));
-        drawingPanel.setToolTipText("Images will be displayed here");
-        drawingPanel.setBackground(Color.white);
-        drawingPanel.setOpaque(true);
-
-        drawingPanel.addMouseMotionListener(new MouseAdapter() {
-            /*@Override
-            public void mouseDragged(MouseEvent e) {
-            }*/
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                cordinates.setX(e.getX());
-                cordinates.setY(e.getY());
-                loadCoordinateInfo();
-            }
-        });
-        drawingPanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent press) {
-                // System.err.println("mouse pressed at " + press.getPoint());
-                Point p1 = new Point(press.getX(), press.getY());
-                if (toolBar.getSelectedShapeOption() == "Rectangle") {
-                    rectangle = new Rectangle(p1,
-                            StringColor.getHexColorString(selectedColor));
-                    // System.out.println("First point of rectangle[" + p1 +
-                    // "]");
-                } else if (toolBar.getSelectedShapeOption() == "Oval") {
-                    circle = new Circle(p1,
-                            StringColor.getHexColorString(selectedColor));
-                    // System.out.println("First point of circle[" + p1 + "]");
+    /**
+     * Receives a DrawingPanel and creates an observable that wraps a MouseListener to the DrawingPanel
+     * the Observable emits MouseEvent when the MouseListener emits an event on mouseMoved
+     * @param panel DrawingPanel to be observed
+     * @return Observable with emission of type MouseEvent
+     */
+    private Observable<MouseEvent> mouseMovedObservable(DrawingPanel panel){
+        return Observable.create(emitter -> {
+            panel.addMouseMotionListener(new MouseAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    emitter.onNext(e);
                 }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent release) {
-                Point p2 = new Point(release.getX(), release.getY());
-                if (toolBar.getSelectedShapeOption() == "Rectangle") {
-                    rectangle.addPoint(p2);
-                    // rectangle.draw(graphics);
-                    // System.out.println("Second point of rectangle[" + p2 +
-                    // "]");
-                    // System.out.println(rectangle);
-
-                    if (drawing == null) {
-                        drawing = new Drawing();
-                        drawing.addShape(rectangle);
-                        drawingPanel.setDrawing(drawing);
-                    } else {
-                        try {
-                            Drawing d = new Drawing();
-                            d.addShape(rectangle);
-                            //drawingPanel.addDrawing(d);
-                            drawingPanel.setDrawing(drawing);
-                        } catch (NullPointerException e) {
-                            System.err.println(e.getMessage());
-                        }
-                    }
-                } else if (toolBar.getSelectedShapeOption() == "Oval") {
-                    circle.addPoint(p2);
-                    // System.out.println("Second point of circle[" + p2 + "]");
-                    // System.out.println(circle);
-                    if (drawing == null) {
-                        drawing = new Drawing();
-                        drawing.addShape(circle);
-                        drawingPanel.setDrawing(drawing);
-                    } else {
-                        try {
-                            Drawing d = new Drawing();
-                            d.addShape(circle);
-                            //drawingPanel.addDrawing(d);
-                            drawingPanel.setDrawing(drawing);
-                        } catch (NullPointerException e) {
-                            System.err.println(e.getMessage());
-                        }
-                    }
-                }
-            }
-
+            });
         });
-        return new JScrollPane(drawingPanel);
-
-
     }
 
 
@@ -305,15 +245,12 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
     private void createSelectedColorPanel(){
         selectedColorPanel = new JPanel();
         selectedColorPanel.setMaximumSize(selectedColorPanel.getPreferredSize());
-        selectedColorPanel.setBackground(Color.GREEN);
+        selectedColorPanel.setBackground(selectedColor);
         selectedColorPanel.setPreferredSize(new DimensionUIResource(20, 20));
         JLabel selectedColorLabel = new JLabel("Selected color: ");
         selectedColorLabel.setLabelFor(selectedColorPanel);
         selectedColorPanelContainer.add(selectedColorLabel);
         selectedColorPanelContainer.add(selectedColorPanel);
-    }
-    public void setSelectedColorPanel(Color color){
-
     }
 
     @Override
@@ -329,73 +266,5 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
     private void startNewDrawing(){
         drawingPanel.setDrawing(new Drawing());
     }
-
-
-    MouseListener l = new MouseAdapter(){
-
-    };
-
-    private Observable<MouseEvent> getMouseDragged(DrawingPanel panel){
-        return Observable.create(emitter -> {
-
-
-            panel.addMouseMotionListener(new MouseAdapter() {
-                @Override
-                public void mouseDragged(MouseEvent e) {
-                    emitter.onNext(e);
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    System.out.println("In mousePressed");
-                    Point p1 = new Point(e.getX(), e.getY());
-                    if (Objects.equals(toolBar.getSelectedShapeOption(), "rectangle")) {
-                        rectangle = new Rectangle(p1,
-                                StringColor.getHexColorString(selectedColor));
-                        // System.out.println("First point of rectangle[" + p1 +
-                        // "]");
-                    } else if (Objects.equals(toolBar.getSelectedShapeOption(), "circle")) {
-                        circle = new Circle(p1,
-                                StringColor.getHexColorString(selectedColor));
-                        // System.out.println("First point of circle[" + p1 + "]");
-                    }else if(Objects.equals(toolBar.getSelectedShapeOption(), "line")){
-                        line = new Line(p1, StringColor.getHexColorString(selectedColor));
-                    }
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    System.out.println("In mouseReleased");
-                    Point p2 = new Point(e.getX(), e.getY());
-                    if (Objects.equals(toolBar.getSelectedShapeOption(), "rectangle")) {
-                        rectangle.addPoint(p2);
-                        panel.addShapeToDrawing(rectangle);
-                        // rectangle.draw(graphics);
-                        // System.out.println("Second point of rectangle[" + p2 +
-                        // "]");
-                        // System.out.println(rectangle);
-
-
-                    } else if (Objects.equals(toolBar.getSelectedShapeOption(), "circle")) {
-                        circle.addPoint(p2);
-                        // System.out.println("Second point of circle[" + p2 + "]");
-                        // System.out.println(circle);
-                        panel.addShapeToDrawing(circle);
-                    }
-                }
-
-
-                @Override
-                public void mouseMoved(MouseEvent e) {
-                    cordinates.setX(e.getX());
-                    cordinates.setY(e.getY());
-                    loadCoordinateInfo();
-                }
-            });
-
-        });
-    }
-
-
 
 }

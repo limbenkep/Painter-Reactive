@@ -16,8 +16,7 @@ import java.awt.*;
  */
 public class StringColor {
 	/**
-	 * @param color
-	 *            color to convert to hex string
+	 * @param color color to convert to hex string
 	 * @return hex string value of a color
 	 */
 	public static String getHexColorString(Color color) {
