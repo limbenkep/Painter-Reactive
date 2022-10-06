@@ -102,6 +102,7 @@ public class Rectangle extends Shape {
             int width = getWidth();
 
             g2.setPaint(Color.decode(this.getColor()));
+            g2.setStroke(new BasicStroke(thickness));
             g2.draw(new java.awt.Rectangle(x, y, width, height));
 
         }

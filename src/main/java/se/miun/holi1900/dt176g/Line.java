@@ -28,6 +28,7 @@ public class Line extends Shape{
     public void draw(Graphics g) {
         Graphics2D g2 = (Graphics2D)g;
         g2.setPaint(Color.decode(this.getColor()));
+        g2.setStroke(new BasicStroke(thickness));
         if(hasEndPoint()){
             g2.drawLine(points.get(0).getX(),points.get(0).getY(), points.get(1).getX(), points.get(1).getY());
         }

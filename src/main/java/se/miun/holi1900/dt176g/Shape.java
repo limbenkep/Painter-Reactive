@@ -25,6 +25,8 @@ public abstract class Shape implements Drawable{
     protected int maxPointsCount; //The number of required to make the shape
     protected List<Point> points = new ArrayList<>(maxPointsCount);
     private String color;
+
+    protected float thickness  = 1.0f;
     /**
      * Constructor takes a point and color string
      * shape requires at least one point to be created
@@ -32,7 +34,6 @@ public abstract class Shape implements Drawable{
 
     public Shape(int x, int y, String color) {
         this(new Point(x,y), color);
-
     }
     public Shape(Point point, String color) {
         this.color = color;
@@ -43,6 +44,10 @@ public abstract class Shape implements Drawable{
     }
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public void setThickness(float thickness){
+        this.thickness = thickness;
     }
 
 

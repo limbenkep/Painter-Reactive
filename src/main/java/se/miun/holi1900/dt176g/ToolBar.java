@@ -15,6 +15,7 @@ public class ToolBar extends JToolBar {
     private OnToolBarColorChanged colorChangeListener;
     List<JPanel> colorPanels = new ArrayList<>();
     private JComboBox<String> shapeOptions;
+    private JComboBox<Float> thicknessOptions;
 
     public ToolBar(MainFrame frame) {
         this.init(frame);
@@ -23,11 +24,14 @@ public class ToolBar extends JToolBar {
     private void init(MainFrame frame){
         colorPanelSContainer = new JPanel(new GridLayout(1,6));
         shapeOptions = new JComboBox<>();
+        thicknessOptions = new JComboBox<>();
         setColorPanels(frame);
         loadShapeOptions();
+        loadThicknessOption();
 
         this.add(colorPanelSContainer);
         this.add(shapeOptions);
+        this.add(thicknessOptions);
     }
     public String getSelectedShapeOption(){
         String shape = shapeOptions.getSelectedItem().toString();
@@ -73,6 +77,17 @@ public class ToolBar extends JToolBar {
         //shapeOptions.addItem("Freehand shape");
         shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
         shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
+    }
+
+    private void loadThicknessOption(){
+        thicknessOptions.addItem(1.0f);
+        thicknessOptions.addItem(2.0f);
+
+        shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
+        shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
+
+
+
     }
 
     MouseListener l = new MouseAdapter(){

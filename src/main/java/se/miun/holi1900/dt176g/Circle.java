@@ -87,6 +87,7 @@ public class Circle extends Shape {
             int y = startPoint.getY();
 
             g2.setPaint(Color.decode(this.getColor()));
+            g2.setStroke(new BasicStroke(thickness));
             g2.drawOval(x, y, diameter, diameter);
         }
         else{
