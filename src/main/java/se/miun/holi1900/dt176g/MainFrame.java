@@ -32,6 +32,7 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
     private JLabel currentCoordinateLabel; // Label for the panel displaying current coordinates
     private Point currentCoordinates; //current coordinates of the cursor which updates as mouse moves
+    private Point lastPoint; //Last point from the from freehand drawing
 
     Shape currentShape; // current shape being drawn
 
@@ -60,6 +61,8 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
         Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
 
+        Observable<MouseEvent> mouseDragged = mouseDraggedObservable(drawingPanel);
+        Disposable disposable3 = mouseDragged.subscribe(this::drawFreeHandShape);
     }
 
     private void initComponents(){
@@ -118,18 +121,37 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         Point p1 = new Point(pressed.getX(), pressed.getY());
         if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
             currentShape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
-            System.out.println("First point of rectangle[" + p1 + "]");
         }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
-            System.out.println(" selected color; " + Utils.getHexColorString(selectedColor));
             currentShape = new Circle(p1, Utils.getHexColorString(selectedColor));
         }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
             currentShape = new Line(p1, Utils.getHexColorString(selectedColor));
         }
 
-        System.out.println("In mouseReleased");
-        Point p2 = new Point(released.getX(), released.getY());
-        currentShape.addPoint(p2);
-        drawingPanel.addShapeToDrawing(currentShape);
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
+            lastPoint = null;
+        }else {
+            System.out.println("In mouseReleased");
+            Point p2 = new Point(released.getX(), released.getY());
+            currentShape.setThickness(toolBar.getSelectedThickness());
+            currentShape.addPoint(p2);
+            drawingPanel.addShapeToDrawing(currentShape);
+        }
+
+    }
+
+    private void drawFreeHandShape(MouseEvent e){
+
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
+            if(lastPoint == null){
+                lastPoint = new Point(e.getX(), e.getY());
+            }else{
+                currentShape = new Line(lastPoint, Utils.getHexColorString(selectedColor));
+                currentShape.setThickness(toolBar.getSelectedThickness());
+                currentShape.addPoint(e.getX(), e.getY());
+                drawingPanel.addShapeToDrawing(currentShape);
+                lastPoint = new Point(e.getX(), e.getY());
+            }
+        }
     }
 
     /**
@@ -183,25 +205,21 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
      * @return Observable with emission of type MouseEvent
      */
     private Observable<MouseEvent> mouseReleasedObservable(DrawingPanel panel){
-        return Observable.create(emitter -> {
-            panel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    emitter.onNext(e);
-                }
-            });
-        });
+        return Observable.create(emitter -> panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                emitter.onNext(e);
+            }
+        }));
     }
 
     private Observable<MouseEvent> mouseDraggedObservable(DrawingPanel panel){
-        return Observable.create(emitter -> {
-            panel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseDragged(MouseEvent e) {
-                    emitter.onNext(e);
-                }
-            });
-        });
+        return Observable.create(emitter -> panel.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                emitter.onNext(e);
+            }
+        }));
     }
 
     /**
@@ -211,14 +229,12 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
      * @return Observable with emission of type MouseEvent
      */
     private Observable<MouseEvent> mouseMovedObservable(DrawingPanel panel){
-        return Observable.create(emitter -> {
-            panel.addMouseMotionListener(new MouseAdapter() {
-                @Override
-                public void mouseMoved(MouseEvent e) {
-                    emitter.onNext(e);
-                }
-            });
-        });
+        return Observable.create(emitter -> panel.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                emitter.onNext(e);
+            }
+        }));
     }
 
     /**

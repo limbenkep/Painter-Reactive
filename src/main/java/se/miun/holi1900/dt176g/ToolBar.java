@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ToolBar extends JToolBar {
     private JPanel colorPanelSContainer;
@@ -34,9 +35,13 @@ public class ToolBar extends JToolBar {
         this.add(thicknessOptions);
     }
     public String getSelectedShapeOption(){
-        String shape = shapeOptions.getSelectedItem().toString();
+        String shape = Objects.requireNonNull(shapeOptions.getSelectedItem()).toString();
         System.out.println("selected shape option: " + shape);
         return  shape;
+    }
+
+    public float getSelectedThickness(){
+        return (float) thicknessOptions.getSelectedItem();
     }
 
     public void setMouseListener(MouseListener mouseListener) {
@@ -74,20 +79,19 @@ public class ToolBar extends JToolBar {
         shapeOptions.addItem("Rectangle");
         shapeOptions.addItem("Oval");
         shapeOptions.addItem("Line");
-        //shapeOptions.addItem("Freehand shape");
+        shapeOptions.addItem("Freehand");
         shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
         shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
     }
 
     private void loadThicknessOption(){
-        thicknessOptions.addItem(1.0f);
-        thicknessOptions.addItem(2.0f);
-
-        shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());
-        shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
-
-
-
+        float value = 0.0f;
+        for(int i=0; i<10; i++){
+            value+=1.0f;
+            thicknessOptions.addItem(value);
+        }
+        thicknessOptions.setMaximumSize(thicknessOptions.getPreferredSize());
+        thicknessOptions.setMinimumSize(thicknessOptions.getPreferredSize());
     }
 
     MouseListener l = new MouseAdapter(){

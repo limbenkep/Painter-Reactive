@@ -38,6 +38,13 @@ public class Menu extends JMenuBar {
         });
         file.add(newItem);
 
+        //menu option to delete last shape added to drawing
+        JMenuItem undoItem = new JMenuItem("Undo");
+        Observable<Boolean> undoItemObservable = getSelectMenuItemObservable(undoItem);
+        Disposable undoItemDisposable = undoItemObservable.subscribe(e-> {
+            frame.deleteLastShape();
+        });
+        file.add(undoItem);
 
         //menu option to Exit drawing
         JMenuItem exitItem = new JMenuItem("Exit");
@@ -48,15 +55,6 @@ public class Menu extends JMenuBar {
             frame.disposeDisposables();
             System.exit(0);
         });
-
-
-        //menu option to delete last shape added to drawing
-        JMenuItem undoItem = new JMenuItem("Undo");
-        Observable<Boolean> undoItemObservable = getSelectMenuItemObservable(undoItem);
-        Disposable undoItemDisposable = undoItemObservable.subscribe(e-> {
-                    frame.deleteLastShape();
-        });
-        file.add(undoItem);
     }
 
     private Completable getCompletable(JMenuItem menuItem){
