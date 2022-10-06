@@ -1,5 +1,8 @@
 package se.miun.holi1900.dt176g;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +42,12 @@ public class Drawing implements Drawable{
 
     @Override
     public void draw(Graphics g) {
-        if(!shapes.isEmpty()){
+        /*if(!shapes.isEmpty()){
             for (Shape shape : shapes) {
                 shape.draw(g);
             }
-        }
+        }*/
+        Observable<Shape> shapesObservable = Observable.fromIterable(shapes);
+        Disposable d = shapesObservable.subscribe(shape -> shape.draw(g));
     }
 }

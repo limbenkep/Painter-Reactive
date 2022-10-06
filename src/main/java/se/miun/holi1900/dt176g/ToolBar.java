@@ -35,9 +35,7 @@ public class ToolBar extends JToolBar {
         this.add(thicknessOptions);
     }
     public String getSelectedShapeOption(){
-        String shape = Objects.requireNonNull(shapeOptions.getSelectedItem()).toString();
-        System.out.println("selected shape option: " + shape);
-        return  shape;
+        return shapeOptions.getSelectedItem().toString();
     }
 
     public float getSelectedThickness(){
@@ -76,7 +74,7 @@ public class ToolBar extends JToolBar {
      */
     private void loadShapeOptions(){
         shapeOptions.addItem("Rectangle");
-        shapeOptions.addItem("Oval");
+        shapeOptions.addItem("Circle");
         shapeOptions.addItem("Line");
         shapeOptions.addItem("Freehand");
         shapeOptions.setMaximumSize(shapeOptions.getPreferredSize());

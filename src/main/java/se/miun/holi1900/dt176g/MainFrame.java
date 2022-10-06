@@ -125,11 +125,10 @@ public class MainFrame extends JFrame {
      * @param released mouseReleased MouseEvent
      */
     private void drawShape(MouseEvent pressed, MouseEvent released){
-        System.out.println("In mousePressed");
         Point p1 = new Point(pressed.getX(), pressed.getY());
         if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
             currentShape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
-        }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
+        }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Circle")) {
             currentShape = new Circle(p1, Utils.getHexColorString(selectedColor));
         }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
             currentShape = new Line(p1, Utils.getHexColorString(selectedColor));
@@ -138,7 +137,6 @@ public class MainFrame extends JFrame {
         if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
             lastPoint = null;
         }else {
-            System.out.println("In mouseReleased");
             Point p2 = new Point(released.getX(), released.getY());
             currentShape.setThickness(toolBar.getSelectedThickness());
             currentShape.addPoint(p2);
