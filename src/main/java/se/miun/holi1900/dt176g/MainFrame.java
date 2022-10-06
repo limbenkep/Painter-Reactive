@@ -263,6 +263,7 @@ public class MainFrame extends JFrame {
         for(Disposable d: disposables){
             d.dispose();
         }
+        toolBar.disposeDisposables();
     }
 
 
@@ -287,12 +288,7 @@ public class MainFrame extends JFrame {
         selectedColorPanelContainer.add(selectedColorPanel);
     }
 
-    /*@Override
-    public void currentColor(Color color) {
-        //selectedColor = color;
-        //selectedColorPanel.setBackground(color);
-        System.out.println("MainFrame.selectedColor new Color " + color);
-    }*/
+
 
     /**
      * resets drawing to a empty drawing and clear drawing area

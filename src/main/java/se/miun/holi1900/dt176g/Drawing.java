@@ -42,12 +42,8 @@ public class Drawing implements Drawable{
 
     @Override
     public void draw(Graphics g) {
-        /*if(!shapes.isEmpty()){
-            for (Shape shape : shapes) {
-                shape.draw(g);
-            }
-        }*/
         Observable<Shape> shapesObservable = Observable.fromIterable(shapes);
-        Disposable d = shapesObservable.subscribe(shape -> shape.draw(g));
+        shapesObservable.subscribe(shape -> shape.draw(g));
+
     }
 }

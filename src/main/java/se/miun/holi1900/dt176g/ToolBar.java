@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Objects;
 
 public class ToolBar extends JToolBar {
-    private JPanel colorPanelSContainer;
-    List<JPanel> colorPanels = new ArrayList<>();
-    private JComboBox<String> shapeOptions;
-    private JComboBox<Float> thicknessOptions;
-    private final List<Disposable> disposables = new ArrayList<>();
+    private JPanel colorPanelSContainer; //contains all the different color panels
+    List<JPanel> colorPanels = new ArrayList<>(); //list of all color panels
+    private JComboBox<String> shapeOptions; // displays the different shape options
+    private JComboBox<Float> thicknessOptions; // displays the different thickness options
+    private final List<Disposable> disposables = new ArrayList<>();// stores all disposables created 
     public ToolBar(MainFrame frame) {
         this.init(frame);
     }
@@ -34,16 +34,26 @@ public class ToolBar extends JToolBar {
         this.add(shapeOptions);
         this.add(thicknessOptions);
     }
+
+    /**
+     *
+     * @return selected shape from the shapeOptions JComboBox
+     */
     public String getSelectedShapeOption(){
         return shapeOptions.getSelectedItem().toString();
     }
 
+    /**
+     *
+     * @return selected line thickness from the thicknessOptions JComboBox
+     */
     public float getSelectedThickness(){
         return (float) thicknessOptions.getSelectedItem();
     }
 
     /**
      * create JPanel for each color object in colors List and store them in the colorPanels List
+     * Attach an observable to each color panel that emits a emission when the panel is clicked
      */
     private void setColorPanels(MainFrame frame){
         List<Color> colors = new ArrayList<>();
@@ -81,6 +91,9 @@ public class ToolBar extends JToolBar {
         shapeOptions.setMinimumSize(shapeOptions.getPreferredSize());
     }
 
+    /**
+     * Creates the thickness JComboBox add items.
+     */
     private void loadThicknessOption(){
         float value = 0.0f;
         for(int i=0; i<10; i++){
@@ -91,6 +104,12 @@ public class ToolBar extends JToolBar {
         thicknessOptions.setMinimumSize(thicknessOptions.getPreferredSize());
     }
 
+    /**
+     * receives a MouseEvent and mainFrame, get the color of the panel that
+     * emit the event and update the selected color in MainFrame.
+     * @param e MouseEvent emitted by color panel MouseListener
+     * @param frame MainFrame
+     */
     private void selectColor(MouseEvent e,MainFrame frame){
         for (JPanel colorPanel : colorPanels) {
             if (e.getComponent().equals(colorPanel)) {
@@ -101,6 +120,12 @@ public class ToolBar extends JToolBar {
     }
 
 
+    /**
+     * Creates an Observable that wraps a MouseListener listening to the passed
+     * panel and emits MouseEvents when the panel is clicked.
+     * @param panel JPanel to be listened for  clicks
+     * @return Observable that emit MouseEvents when t
+     */
     private Observable<MouseEvent> getMouseClickedObservable(JPanel panel){
         return Observable.create(emitter -> {
             panel.addMouseListener(new MouseAdapter() {
@@ -112,6 +137,10 @@ public class ToolBar extends JToolBar {
         });
     }
 
+    /**
+     * dispose of all Disposables created in this class
+     * method called when program is about to exit
+     */
     public void disposeDisposables(){
         for(Disposable d: disposables){
             d.dispose();

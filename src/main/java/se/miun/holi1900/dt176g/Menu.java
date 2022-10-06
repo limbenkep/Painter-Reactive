@@ -53,6 +53,8 @@ public class Menu extends JMenuBar {
         Completable exitSelected = getCompletable(exitItem);
         exitSelected.subscribe(()->{
             frame.disposeDisposables();
+            newItemDisposable.dispose();
+            undoItemDisposable.dispose();
             System.exit(0);
         });
     }
