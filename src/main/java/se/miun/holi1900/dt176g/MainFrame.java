@@ -30,20 +30,11 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
     private JPanel selectedColorPanel;
     private Color selectedColor;
 
-    private JLabel cordinateLabel;
-    private Point cordinates;
+    private JLabel currentCoordinateLabel; // Label for the panel displaying current coordinates
+    private Point currentCoordinates; //current coordinates of the cursor which updates as mouse moves
 
+    Shape currentShape; // current shape being drawn
 
-    private Drawing drawing; // a drawing to be displayed in the drawingPanel
-    Point startPoint;
-    Point endPoint;
-    Rectangle rectangle;
-    Circle circle;
-    Line line;
-
-    Shape shape;
-
-    JScrollPane scrollPane;
 
     public MainFrame() {
 
@@ -73,7 +64,6 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
     private void initComponents(){
 
-        //scrollPane = makeDisplayArea();
         //Creates menu bar and adds it to the MainFrame
         this.setJMenuBar(new Menu(this));
 
@@ -98,14 +88,14 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         selectedColorPanelContainer.setLayout(new BoxLayout(selectedColorPanelContainer ,BoxLayout.X_AXIS));
         endPageBar = new JPanel();
         endPageBar.setLayout(new BoxLayout(endPageBar, BoxLayout.X_AXIS));
-        cordinates = new Point(0,0); //default coordinates is 0,0
+        currentCoordinates = new Point(0,0); //default coordinates is 0,0
         //Add cordinateLabel and selectedColorPanel to container enPageBar JPanel
-        cordinateLabel = new JLabel();
+        currentCoordinateLabel = new JLabel();
         loadCoordinateInfo();
         //Create the panel displaying selected color information
         createSelectedColorPanel();
-        endPageBar.add(cordinateLabel);
-        cordinateLabel.setAlignmentX(0);
+        endPageBar.add(currentCoordinateLabel);
+        currentCoordinateLabel.setAlignmentX(0);
         endPageBar.add(Box.createHorizontalGlue());
         endPageBar.add(selectedColorPanelContainer);
         selectedColorPanelContainer.setAlignmentX(1);
@@ -127,19 +117,19 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         System.out.println("In mousePressed");
         Point p1 = new Point(pressed.getX(), pressed.getY());
         if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
-            shape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
+            currentShape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
             System.out.println("First point of rectangle[" + p1 + "]");
         }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Oval")) {
             System.out.println(" selected color; " + Utils.getHexColorString(selectedColor));
-            shape = new Circle(p1, Utils.getHexColorString(selectedColor));
+            currentShape = new Circle(p1, Utils.getHexColorString(selectedColor));
         }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
-            shape = new Line(p1, Utils.getHexColorString(selectedColor));
+            currentShape = new Line(p1, Utils.getHexColorString(selectedColor));
         }
 
         System.out.println("In mouseReleased");
         Point p2 = new Point(released.getX(), released.getY());
-        shape.addPoint(p2);
-        drawingPanel.addShapeToDrawing(shape);
+        currentShape.addPoint(p2);
+        drawingPanel.addShapeToDrawing(currentShape);
     }
 
     /**
@@ -147,8 +137,8 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
      * @param e MouseEvent
      */
     private void updateCoordinatesOnMouseMoved(MouseEvent e){
-        cordinates.setX(e.getX());
-        cordinates.setY(e.getY());
+        currentCoordinates.setX(e.getX());
+        currentCoordinates.setY(e.getY());
         loadCoordinateInfo();
     }
 
@@ -231,12 +221,19 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         });
     }
 
+    /**
+     * dispose of all disposables when program if exiting
+     */
+    public void disposeDisposables(){
+
+    }
+
 
     /**
      * updates coordinates information with current cordinates
      */
     private void loadCoordinateInfo(){
-        cordinateLabel.setText("Coordinates: " + cordinates.toString());
+        currentCoordinateLabel.setText("Coordinates: " + currentCoordinates.toString());
     }
 
     /**
@@ -263,8 +260,14 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
     /**
      * resets drawing to a empty drawing and clear drawing area
      */
-    private void startNewDrawing(){
+    public void startNewDrawing(){
         drawingPanel.setDrawing(new Drawing());
+    }
+
+    public void deleteLastShape(){
+        Drawing drawing = drawingPanel.getDrawing();
+        drawing.removeLastShape();
+        drawingPanel.setDrawing(drawing);
     }
 
 }

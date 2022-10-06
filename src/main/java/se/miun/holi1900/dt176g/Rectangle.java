@@ -102,7 +102,8 @@ public class Rectangle extends Shape {
             int width = getWidth();
 
             g2.setPaint(Color.decode(this.getColor()));
-            g2.fillRect(x, y, width, height);
+            g2.draw(new java.awt.Rectangle(x, y, width, height));
+
         }
         else{
             System.out.println("Shape cannot be draw because endpoint is missing.");

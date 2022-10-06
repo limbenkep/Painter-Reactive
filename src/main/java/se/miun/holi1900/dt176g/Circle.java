@@ -87,7 +87,7 @@ public class Circle extends Shape {
             int y = startPoint.getY();
 
             g2.setPaint(Color.decode(this.getColor()));
-            g2.fillOval(x, y, diameter, diameter);
+            g2.drawOval(x, y, diameter, diameter);
         }
         else{
             System.out.println("Shape cannot be draw because endpoint is missing.");

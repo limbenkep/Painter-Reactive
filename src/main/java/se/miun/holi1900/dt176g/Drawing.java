@@ -26,6 +26,16 @@ public class Drawing implements Drawable{
         this.shapes.add(s);
     }
 
+    /**
+     * removes the last shape from the list of shapes
+     */
+    public void removeLastShape(){
+        int size = shapes.size();
+        if(size!=0){
+            shapes.remove(size-1);
+        }
+    }
+
 
     @Override
     public void draw(Graphics g) {
