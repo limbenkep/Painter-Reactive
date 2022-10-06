@@ -1,5 +1,8 @@
 package se.miun.holi1900.dt176g;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -11,13 +14,10 @@ import java.util.Objects;
 
 public class ToolBar extends JToolBar {
     private JPanel colorPanelSContainer;
-    private MouseListener mouseListener;
-
-    private OnToolBarColorChanged colorChangeListener;
     List<JPanel> colorPanels = new ArrayList<>();
     private JComboBox<String> shapeOptions;
     private JComboBox<Float> thicknessOptions;
-
+    private final List<Disposable> disposables = new ArrayList<>();
     public ToolBar(MainFrame frame) {
         this.init(frame);
     }
@@ -44,11 +44,6 @@ public class ToolBar extends JToolBar {
         return (float) thicknessOptions.getSelectedItem();
     }
 
-    public void setMouseListener(MouseListener mouseListener) {
-        System.out.println("ToolBar.setMouseListener");
-        this.mouseListener = mouseListener;
-    }
-
     /**
      * create JPanel for each color object in colors List and store them in the colorPanels List
      */
@@ -65,7 +60,11 @@ public class ToolBar extends JToolBar {
         for (Color color : colors) {
             JPanel panel = new JPanel();
             panel.setBackground(color);
-            panel.addMouseListener(l);
+            Observable<MouseEvent> clicked = getMouseClickedObservable(panel);
+            Disposable d = clicked.subscribe(e->{
+                this.selectColor(e, frame);
+            });
+            disposables.add(d);
             colorPanels.add(panel);
             colorPanelSContainer.add(panel);
         }
@@ -94,31 +93,31 @@ public class ToolBar extends JToolBar {
         thicknessOptions.setMinimumSize(thicknessOptions.getPreferredSize());
     }
 
-    MouseListener l = new MouseAdapter(){
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            for (JPanel colorPanel : colorPanels) {
-                if (e.getComponent().equals(colorPanel)) {
-                    Color selectedColor = colorPanel.getBackground();
-                    System.out.println("ToolBar.mouseClicked selected color " +selectedColor);
-                    //selectedColor.setBackground(select);
-                    colorChangeListener.currentColor(selectedColor);
-                }
+    private void selectColor(MouseEvent e,MainFrame frame){
+        for (JPanel colorPanel : colorPanels) {
+            if (e.getComponent().equals(colorPanel)) {
+                Color selectedColor = colorPanel.getBackground();
+                frame.setSelectedColor(selectedColor);
             }
         }
-    };
-
-    public void setColorChangeListener(OnToolBarColorChanged colorChangeListener) {
-        this.colorChangeListener = colorChangeListener;
     }
 
-    public Color getColor(JPanel panel){
-        for (JPanel colorPanel : colorPanels) {
-            if (panel == colorPanel) {
-                return colorPanel.getBackground();
-            }
+
+    private Observable<MouseEvent> getMouseClickedObservable(JPanel panel){
+        return Observable.create(emitter -> {
+            panel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    emitter.onNext(e);
+                }
+            });
+        });
+    }
+
+    public void disposeDisposables(){
+        for(Disposable d: disposables){
+            d.dispose();
         }
-        return null;
     }
 
 }

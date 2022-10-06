@@ -19,7 +19,7 @@ import javax.swing.plaf.DimensionUIResource;
  * @version 1.0
  * @since 	2022-09-18
  */
-public class MainFrame extends JFrame implements OnToolBarColorChanged{
+public class MainFrame extends JFrame {
     private ToolBar toolBar;
     private JPanel selectedColorPanelContainer;
 
@@ -35,6 +35,7 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
     private Point lastPoint; //Last point from the from freehand drawing
 
     Shape currentShape; // current shape being drawn
+    List<Disposable> disposables = new ArrayList<>(); //store all disposables created to be disposed when exiting program
 
 
     public MainFrame() {
@@ -57,12 +58,15 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
         Observable<List<MouseEvent>> mouseDraw = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
         Disposable disposable1 = mouseDraw.subscribe(s->drawShape(s.get(0), s.get(1)));
+        disposables.add(disposable1);
 
         Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
         Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
+        disposables.add(disposable2);
 
         Observable<MouseEvent> mouseDragged = mouseDraggedObservable(drawingPanel);
         Disposable disposable3 = mouseDragged.subscribe(this::drawFreeHandShape);
+        disposables.add(disposable3);
     }
 
     private void initComponents(){
@@ -75,7 +79,6 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
         // Creates toolbar containing color and shape tools and adds it to the MainFrame
         toolBar = new ToolBar(this);
-        toolBar.setColorChangeListener(this);
         this.getContentPane().add(toolBar, BorderLayout.PAGE_START);
 
         // Creates drawing area and adds it to the MainFrame
@@ -105,7 +108,12 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
         add(endPageBar, BorderLayout.PAGE_END);
 
-    };
+    }
+
+    public void setSelectedColor(Color color){
+        this.selectedColor = color;
+        selectedColorPanel.setBackground(color);
+    }
 
     /**
      * Draws shape from coordinate from mousePressed and mouseRelease events.
@@ -139,18 +147,24 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
 
     }
 
+    /**
+     * Receives a MouseEvent gets x and y coordinates.
+     * If lastPoint is null the coordinates are set to lastPoint.
+     * If lastPoint is not null, a line is drawn from between last point and the
+     * the coordinates of the event.
+     * The MouseEvent's coordinates is then set as to lastPoint
+     * @param e MouseEvent holding new coordinates
+     */
     private void drawFreeHandShape(MouseEvent e){
 
         if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
-            if(lastPoint == null){
-                lastPoint = new Point(e.getX(), e.getY());
-            }else{
+            if (lastPoint != null) {
                 currentShape = new Line(lastPoint, Utils.getHexColorString(selectedColor));
                 currentShape.setThickness(toolBar.getSelectedThickness());
                 currentShape.addPoint(e.getX(), e.getY());
                 drawingPanel.addShapeToDrawing(currentShape);
-                lastPoint = new Point(e.getX(), e.getY());
             }
+            lastPoint = new Point(e.getX(), e.getY());
         }
     }
 
@@ -213,6 +227,13 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         }));
     }
 
+    /**
+     * Receives a DrawingPanel and creates an observable that wraps a MouseMotionListener to the DrawingPanel.
+     * The Observable continuously emits MouseEvent from the MouseListener as the mouse is dragged
+     * accross the DrawingPanel
+     * @param panel DrawingPanel to be observed
+     * @return Observable with emission of type MouseEvent
+     */
     private Observable<MouseEvent> mouseDraggedObservable(DrawingPanel panel){
         return Observable.create(emitter -> panel.addMouseMotionListener(new MouseAdapter() {
             @Override
@@ -241,7 +262,9 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
      * dispose of all disposables when program if exiting
      */
     public void disposeDisposables(){
-
+        for(Disposable d: disposables){
+            d.dispose();
+        }
     }
 
 
@@ -266,12 +289,12 @@ public class MainFrame extends JFrame implements OnToolBarColorChanged{
         selectedColorPanelContainer.add(selectedColorPanel);
     }
 
-    @Override
+    /*@Override
     public void currentColor(Color color) {
-        selectedColor = color;
-        selectedColorPanel.setBackground(color);
+        //selectedColor = color;
+        //selectedColorPanel.setBackground(color);
         System.out.println("MainFrame.selectedColor new Color " + color);
-    }
+    }*/
 
     /**
      * resets drawing to a empty drawing and clear drawing area
