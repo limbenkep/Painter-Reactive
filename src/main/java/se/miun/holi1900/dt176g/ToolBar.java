@@ -17,7 +17,7 @@ public class ToolBar extends JToolBar {
     List<JPanel> colorPanels = new ArrayList<>(); //list of all color panels
     private JComboBox<String> shapeOptions; // displays the different shape options
     private JComboBox<Float> thicknessOptions; // displays the different thickness options
-    private final List<Disposable> disposables = new ArrayList<>();// stores all disposables created 
+    private final List<Disposable> disposables = new ArrayList<>();// stores all disposables created
     public ToolBar(MainFrame frame) {
         this.init(frame);
     }

@@ -1,9 +1,15 @@
 package se.miun.holi1900.dt176g;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +26,11 @@ import javax.swing.plaf.DimensionUIResource;
  * @since 	2022-09-18
  */
 public class MainFrame extends JFrame {
+    private Socket socket = null;
+    private ObjectInputStream inputStream = null;
+    private ObjectOutputStream outputStream = null;
+    private final String serverAddress;
+    private final int serverPort;
     private ToolBar toolBar;
     private JPanel selectedColorPanelContainer;
 
@@ -38,8 +49,14 @@ public class MainFrame extends JFrame {
     List<Disposable> disposables = new ArrayList<>(); //store all disposables created to be disposed when exiting program
 
 
-    public MainFrame() {
+    public MainFrame(String serverAddress, int serverPort) {
 
+        this.serverAddress = serverAddress;
+        this.serverPort = serverPort;
+
+        final BufferedWriter out;
+        final BufferedReader in;
+        //create socket and streams
 
         // default window-size.
         this.setSize(1200, 800);
@@ -54,10 +71,73 @@ public class MainFrame extends JFrame {
 
         initComponents();
 
-        Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
+        try{
+            socket = new Socket(serverAddress, serverPort);
+            //ObjectOutputStream must be created first because
+            // ObjectInputStream blocks until corresponding ObjectOutputStream
+            //sends a header
+            /*outputStream = new ObjectOutputStream(socket.getOutputStream());
+            inputStream = new ObjectInputStream(socket.getInputStream());*/
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            Observable.create(emitter -> {
+                while(true){
+                    emitter.onNext(in.readLine());
+                }
+            }).subscribeOn(Schedulers.io()).subscribe(s-> System.out.println("Broadcast shapes: " + s));
+
+            Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
+            Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
+            Observable<List<MouseEvent>> mouseDraw = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
+            Disposable disposable1 = mouseDraw.observeOn(Schedulers.io()).subscribe(s->{
+                drawShape(s.get(0), s.get(1));
+                out.write(currentShape.toString());
+                out.newLine();
+                out.flush();
+                System.out.println("sent shape" + currentShape.toString());
+            });
+            disposables.add(disposable1);
+
+            Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
+            Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
+            disposables.add(disposable2);
+
+            Observable<MouseEvent> mouseDragged = mouseDraggedObservable(drawingPanel);
+            Disposable disposable3 = mouseDragged.subscribe(this::drawFreeHandShape);
+            disposables.add(disposable3);
+            /*BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+            PrintWriter printer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
+            consoleReader.lines().forEach(printer::println);
+            System.out.println("in.readLine()");
+            System.out.println(in.readLine());*/
+        } catch (IOException e) {
+            System.out.println("Problem connecting to server.");
+        }
+        /*Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
         Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
         Observable<List<MouseEvent>> mouseDraw = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
-        Disposable disposable1 = mouseDraw.subscribe(s->drawShape(s.get(0), s.get(1)));
+        Disposable disposable1 = mouseDraw.observeOn(Schedulers.io()).subscribe(s->{
+            drawShape(s.get(0), s.get(1));
+            out.write(s.toString());
+            System.out.println("sent shape" + s.toString());
+        });
+        disposables.add(disposable1);
+
+        Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
+        Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
+        disposables.add(disposable2);
+
+        Observable<MouseEvent> mouseDragged = mouseDraggedObservable(drawingPanel);
+        Disposable disposable3 = mouseDragged.subscribe(this::drawFreeHandShape);
+        disposables.add(disposable3);*/
+
+       /* Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
+        Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
+        Observable<List<MouseEvent>> mouseDraw = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
+        Disposable disposable1 = mouseDraw.subscribe(s-> {
+            drawShape(s.get(0), s.get(1));
+            sendShape(currentShape); //TO DO: send on another thread?
+        });
         disposables.add(disposable1);
 
         Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
@@ -67,7 +147,13 @@ public class MainFrame extends JFrame {
         Observable<MouseEvent> mouseDragged = mouseDraggedObservable(drawingPanel);
         Disposable disposable3 = mouseDragged.subscribe(this::drawFreeHandShape);
         disposables.add(disposable3);
+
+        Observable<Shape> receivedShapes = inputStreamObservable(inputStream);
+        Disposable disposable4 = receivedShapes.subscribe(s ->{
+            drawingPanel.addShapeToDrawing(s);
+        } );*/
     }
+
 
     private void initComponents(){
 
@@ -115,6 +201,45 @@ public class MainFrame extends JFrame {
         selectedColorPanel.setBackground(color);
     }
 
+    private void sendShape(Shape shape){
+        try {
+            outputStream.writeObject(shape);
+            outputStream.flush();
+        } catch (IOException e) {
+            System.out.println("Error sending shape.");
+        }
+    }
+
+    /**
+     * Draws shape from coordinate from mousePressed and mouseRelease events.
+     * Gets selected shape and color from toolbar and draw the selected shape
+     * using selected color.
+     * Gets first coordinate from first passed event and second coordinate
+     * from second passed event.
+     * @param pressed mousePressed MouseEvent
+     * @param released mouseReleased MouseEvent
+     */
+    private void getShape(MouseEvent pressed, MouseEvent released){
+
+        Point p1 = new Point(pressed.getX(), pressed.getY());
+        if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
+            currentShape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
+        }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Circle")) {
+            currentShape = new Circle(p1, Utils.getHexColorString(selectedColor));
+        }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
+            currentShape = new Line(p1, Utils.getHexColorString(selectedColor));
+        }
+
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
+            lastPoint = null;
+        }else {
+            Point p2 = new Point(released.getX(), released.getY());
+            currentShape.setThickness(toolBar.getSelectedThickness());
+            currentShape.addPoint(p2);
+            drawingPanel.addShapeToDrawing(currentShape);
+        }
+    }
+
     /**
      * Draws shape from coordinate from mousePressed and mouseRelease events.
      * Gets selected shape and color from toolbar and draw the selected shape
@@ -142,13 +267,12 @@ public class MainFrame extends JFrame {
             currentShape.addPoint(p2);
             drawingPanel.addShapeToDrawing(currentShape);
         }
-
     }
 
     /**
      * Receives a MouseEvent gets x and y coordinates.
      * If lastPoint is null the coordinates are set to lastPoint.
-     * If lastPoint is not null, a line is drawn from between last point and the
+     * If lastPoint is not null, a line is drawn from between last point and
      * the coordinates of the event.
      * The MouseEvent's coordinates is then set as to lastPoint
      * @param e MouseEvent holding new coordinates
@@ -163,6 +287,13 @@ public class MainFrame extends JFrame {
                 drawingPanel.addShapeToDrawing(currentShape);
             }
             lastPoint = new Point(e.getX(), e.getY());
+
+            //send shape to server to be broadcast to other users
+           /* try {
+                outputStream.writeObject(currentShape);
+            } catch (IOException ex) {
+                System.out.println("Error sending shape");;
+            }*/
         }
     }
 
@@ -256,6 +387,27 @@ public class MainFrame extends JFrame {
         }));
     }
 
+    private Observable<Shape> inputStreamObservable(ObjectInputStream stream){
+        return Observable.create(emitter->{
+            while (true){
+                try{
+                    Object object = stream.readObject();
+                    Shape shape = object instanceof Rectangle ? ((Rectangle) object) : null;
+                    emitter.onNext(object);
+                } catch (IOException | ClassNotFoundException e) {
+                    emitter.onError(new RuntimeException(e));
+                }
+            }
+        }).subscribeOn(Schedulers.io()).map(o ->{
+            return (Shape)o;
+            /*if(o instanceof Rectangle){
+                shape = (Rectangle)o;
+            }else if(o instanceof Circle){
+                shape = (Circle)o;
+            }*/
+        });
+    }
+
     /**
      * dispose of all disposables when program if exiting
      */
@@ -265,7 +417,6 @@ public class MainFrame extends JFrame {
         }
         toolBar.disposeDisposables();
     }
-
 
     /**
      * updates coordinates information with current cordinates
@@ -287,8 +438,6 @@ public class MainFrame extends JFrame {
         selectedColorPanelContainer.add(selectedColorLabel);
         selectedColorPanelContainer.add(selectedColorPanel);
     }
-
-
 
     /**
      * resets drawing to a empty drawing and clear drawing area

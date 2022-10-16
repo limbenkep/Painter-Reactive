@@ -1,6 +1,7 @@
 package se.miun.holi1900.dt176g;
 
 import java.awt.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,7 @@ import java.util.List;
  * @version 1.0
  * @since 	2022-09-18
  */
-public abstract class Shape implements Drawable{
+public abstract class Shape implements Drawable, Serializable {
     protected int maxPointsCount; //The number of required to make the shape
     protected List<Point> points = new ArrayList<>(maxPointsCount);
     private String color;

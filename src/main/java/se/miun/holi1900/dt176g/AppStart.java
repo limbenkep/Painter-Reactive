@@ -16,7 +16,7 @@ public class AppStart {
         // Make sure GUI is created on the event dispatching thread
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                new MainFrame().setVisible(true);
+                new MainFrame("localhost", 11111).setVisible(true);
             }
         });
     }
