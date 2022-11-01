@@ -52,6 +52,7 @@ public class Line extends Shape{
 
     @Override
     public String getInfoToBeSaved() {
-        return null;
+        return "Line," + points.get(0).getX() + "," + points.get(0).getY() + ","
+                + points.get(1).getX() + "," + points.get(1).getY() + "," + this.color + "," + this.thickness;
     }
 }

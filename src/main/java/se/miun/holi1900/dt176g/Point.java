@@ -1,4 +1,7 @@
 package se.miun.holi1900.dt176g;
+
+import java.io.Serializable;
+
 /**
  * <h1>Point</h1>
  * This Class is defines the state and behaviours of a point.
@@ -10,7 +13,7 @@ package se.miun.holi1900.dt176g;
  * @version 1.0
  * @since 	2022-09-18
  */
-public class Point {
+public class Point implements Serializable {
     private int x,y;
 
     public Point(int x, int y) {

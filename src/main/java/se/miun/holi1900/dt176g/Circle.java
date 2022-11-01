@@ -73,8 +73,8 @@ public class Circle extends Shape {
     @Override
     public String getInfoToBeSaved() {
 
-        return "circle," + points.get(0).getX() + "," + points.get(0).getY() + ","
-                + points.get(1).getX() + "," + points.get(1).getY() + "," + this.getColor() + "\n";
+        return "Circle," + points.get(0).getX() + "," + points.get(0).getY() + ","
+                + points.get(1).getX() + "," + points.get(1).getY() + "," + this.color + "," + this.thickness;
     }
 
     @Override

@@ -25,7 +25,7 @@ import java.util.List;
 public abstract class Shape implements Drawable, Serializable {
     protected int maxPointsCount; //The number of required to make the shape
     protected List<Point> points = new ArrayList<>(maxPointsCount);
-    private String color;
+    protected String color;
 
     protected float thickness  = 1.0f;
     /**

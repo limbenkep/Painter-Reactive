@@ -87,8 +87,8 @@ public class Rectangle extends Shape {
      */
     @Override
     public String getInfoToBeSaved() {
-        return "rectangle," + points.get(0).getX() + "," + points.get(0).getY() + ","
-                + points.get(1).getX() + "," + points.get(1).getY() + "," + this.getColor() + "\n";
+        return "Rectangle," + points.get(0).getX() + "," + points.get(0).getY() + ","
+                + points.get(1).getX() + "," + points.get(1).getY() + "," + this.color + "," + this.thickness;
     }
 
     @Override
