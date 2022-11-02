@@ -30,13 +30,14 @@ public class MultiServer {
         }
     }
 
-    private Map<Integer, Disposable> disposables;    //key: socket hash
-    private Map<Integer, Disposable> messageDisposables;
-
-    private Subject<Socket> connections;
-    private Subject<String[]> messageStream;   //all messages from all clients
-
+    // socket hash: disposable for streams of incoming shapes from the different sockets
+    private Map<Integer, Disposable> incomingDisposables;    //key: socket hash
+    // socket hash: disposable for streams sending shapes through the different sockets
+    private Map<Integer, Disposable> broadcastDisposables;
+    private Subject<Socket> connections; //all sockets of connected clients
+    private Subject<String[]> shapeStream;   //all shapes from all clients
     private ServerSocket serverSocket;
+
     private boolean acceptConnections = true;
 
 
@@ -66,10 +67,10 @@ public class MultiServer {
     }
 
     private void run() {
-        disposables = new HashMap<>();
-        messageDisposables = new HashMap<>();
+        incomingDisposables = new HashMap<>();
+        broadcastDisposables = new HashMap<>();
         connections = PublishSubject.create();
-        messageStream = ReplaySubject.<String[]>create().toSerialized();  //replay 3 last messages to new clients
+        shapeStream = ReplaySubject.<String[]>create().toSerialized();
 
         // listen for requests on separate thread
         Completable.create(emitter -> listenForIncomingConnectionRequests())
@@ -87,59 +88,46 @@ public class MultiServer {
      */
     private void listenForIncomingConnectionRequests() throws IOException {
         serverSocket = new ServerSocket(11111);
-
         while (acceptConnections) {
-
-            try{
-                final Socket socket = serverSocket.accept();
-                Observable.<Socket>create(emitter -> emitter.onNext(socket))
-                        .observeOn(Schedulers.io())
-                        .subscribe(connections);
-            }catch (Throwable t){
-                System.out.println("I caught you");
-            }
-
+            final Socket socket = serverSocket.accept();
+            Observable.<Socket>create(emitter -> emitter.onNext(socket))
+                    .observeOn(Schedulers.io())
+                    .subscribe(connections);
         }
-
     }
     /**
-     * Receives a Socket and creates an observable that listens for incoming shapes and
-     * adds the shapes  to the shapes stream.
-     * Then subscribe the new client to the shapes stream
+     * Receives a Socket and creates an observable that listens for incoming shapes
+     * from that socket and adds the shapes  to the shapes stream.
+     * If error occurs when reading due to lost connection,
+     * the socket is closes and resources released.
+     * The new client is subscribed to the shapes stream
      * @param socket Socket to be listened to for incoming shapes
      */
     private void listenToSocket(Socket socket) {
-        String portNumber = String.valueOf(socket.getPort());
-        //inject all incoming messages from this socket to the message stream
+        final String portNumber = String.valueOf(socket.getPort());
+        //inject all incoming shapes from this socket to the shape stream
         Observable.<String[]>create(emitter -> {
-                    socketToBufferedReaderLogic(socket)
-                            .subscribe(br -> {
-                                while(!emitter.isDisposed()) {
-                                    String in = br.readLine();
-                                    final String[] emission = {portNumber, in};
-                                    if (in == null || socket.isClosed()) {
-                                        emitter.onError(new ConnectError(socket));
-                                    }
-                                    else {
+            createIncomingShapesObservable(socket)
+                            .subscribe(br->{
+                                        final String[] emission = {portNumber, br};
                                         emitter.onNext(emission);
-                                    }
-                                }
-                            });
+                                    },
+                                    e->emitter.onError(new ConnectError(socket)));
                 })
                 .subscribeOn(Schedulers.io())
-                .doOnSubscribe(d -> disposables.put(socket.hashCode(), d))
+                .doOnSubscribe(d -> incomingDisposables.put(socket.hashCode(), d))
                 .doOnError(this::handleError)
                 .onErrorComplete(err -> err instanceof ConnectError)
                 .doOnNext(System.out::println)
-                .subscribe(messageStream::onNext
+                .subscribe(shapeStream::onNext
                         , err -> System.err.println(err.getMessage())
                         , () -> System.out.println("Socket closed"));
 
-        // subscribe each newly connected client to the messagestream
-        messageStream
+        // subscribe each newly connected client to the shapeStream
+        shapeStream
                 .subscribeOn(Schedulers.io())
-                .doOnSubscribe(d -> messageDisposables.put(socket.hashCode(), d))
-                .withLatestFrom(socketToPrintWriterLogic(socket), (m, bw) -> {
+                .doOnSubscribe(d -> broadcastDisposables.put(socket.hashCode(), d))
+                .withLatestFrom(getBufferedWriterObservable(socket), (m, bw) -> {
                     if(!Objects.equals(m[0], portNumber)){
                         bw.write(m[1]);
                         bw.newLine();
@@ -150,32 +138,54 @@ public class MultiServer {
                 .subscribe();
     }
 
-    Observable<BufferedWriter> socketToPrintWriterLogic(Socket socket) {
+    /**
+     * Recieves a socket and return an Observable that emits the BufferWriter for the socket's outputStream
+     * @param socket socket
+     * @return Observable of type BufferedWriter
+     */
+    Observable<BufferedWriter> getBufferedWriterObservable(Socket socket) {
         return Observable.just(socket)
                 .map(Socket::getOutputStream)
                 .map(OutputStreamWriter::new)
                 .map(BufferedWriter::new);
     }
 
-    Observable<BufferedReader> socketToBufferedReaderLogic(Socket socket) {
+
+    /**
+     * receives a socket and returns an observable that listens for incoming
+     * shapes and emits a stream of shapes String
+     * @param socket passed socket to be listened for incoming shapes
+     * @return Observable of type String containing shapes data
+     */
+    Observable<String> createIncomingShapesObservable(Socket socket) {
         return Observable.just(socket)
                 .map(Socket::getInputStream)
                 .map(InputStreamReader::new)
-                .map(BufferedReader::new);
+                .map(BufferedReader::new)
+                .map(BufferedReader::lines)
+                .flatMap(stream -> Observable.fromIterable(stream::iterator).subscribeOn(Schedulers.computation()));
     }
 
+    /**
+     * stop accepting connection through ServerSocket
+     */
     private void shutdown() {
         acceptConnections = false;
     }
 
+    /**
+     * If error is an instance of ConnectError, the socket that caused the error
+     * is extracted from the ConnectError object
+     * and all resources connected to this socket are released
+     * @param error
+     */
     private void handleError(Throwable error) {
         if (error instanceof ConnectError) {
             Socket socket = ((ConnectError) error).getSocket();
-            disposables.get(socket.hashCode()).dispose();
-            disposables.remove(socket.hashCode());
-            messageDisposables.get(socket.hashCode()).dispose();
-            messageDisposables.remove(socket.hashCode());
-            System.out.println("inside handle error");
+            incomingDisposables.get(socket.hashCode()).dispose();
+            incomingDisposables.remove(socket.hashCode());
+            broadcastDisposables.get(socket.hashCode()).dispose();
+            broadcastDisposables.remove(socket.hashCode());
         }
     }
 

@@ -29,17 +29,9 @@ import javax.swing.plaf.DimensionUIResource;
  */
 public class MainFrame extends JFrame {
     private Socket socket = null;
-    private ObjectInputStream inputStream = null;
-    private ObjectOutputStream outputStream = null;
-    private final String serverAddress;
-    private final int serverPort;
     private ToolBar toolBar;
     private JPanel selectedColorPanelContainer;
-
-
-    private String header;
     private DrawingPanel drawingPanel;
-    private JPanel endPageBar;
     private JPanel selectedColorPanel;
     private Color selectedColor;
 
@@ -54,9 +46,6 @@ public class MainFrame extends JFrame {
 
     public MainFrame(String serverAddress, int serverPort) {
 
-        this.serverAddress = serverAddress;
-        this.serverPort = serverPort;
-
         final BufferedWriter out;
         final BufferedReader in;
         //create socket and streams
@@ -66,7 +55,7 @@ public class MainFrame extends JFrame {
         // application closes when the "x" in the upper-right corner is clicked.
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        this.header = "Reactive Paint";
+        String header = "Reactive Paint";
         this.setTitle(header);
 
         // Changes layout from default to BorderLayout
@@ -116,7 +105,8 @@ public class MainFrame extends JFrame {
                     .subscribe(s-> {
                         drawingPanel.addShapeToDrawing(s);
                         System.out.println("Broadcast shapes: " + s);
-                    });
+                    },
+                            e-> System.out.println("Error: connection lost"));
             disposables.add(inputStreamDisposable);
 
             //This observable emits mouse dragged events and the subscribe observer draw the shape if the chosen
@@ -218,7 +208,7 @@ public class MainFrame extends JFrame {
         //Creates endPageBar and adds it to the MainFrame.
         //This displays the selected color and current coordinates of the cursor
         this.setJMenuBar(new Menu(this));
-        endPageBar = new JPanel(new BorderLayout());
+        JPanel endPageBar = new JPanel(new BorderLayout());
         selectedColorPanelContainer = new JPanel();
         selectedColorPanelContainer.setLayout(new BoxLayout(selectedColorPanelContainer ,BoxLayout.X_AXIS));
         endPageBar = new JPanel();
@@ -398,6 +388,7 @@ public class MainFrame extends JFrame {
             d.dispose();
         }
         toolBar.disposeDisposables();
+        Schedulers.shutdown();
     }
 
     /**

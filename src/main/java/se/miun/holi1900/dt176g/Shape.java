@@ -58,7 +58,7 @@ public abstract class Shape implements Drawable, Serializable {
     /**
      * This function receives x and y values used to create a point object assigns the point object to position 2 of the Point array
      * @param x x coordinate
-     * @param y coordinates
+     * @param y Y coordinate
      */
     public void addPoint(int x, int y){
         this.addPoint(new Point(x, y));
@@ -77,15 +77,12 @@ public abstract class Shape implements Drawable, Serializable {
         }
     }
 
+    /**
+     *
+     * @return true if shape has both start and endpoint else false
+     */
     public boolean hasEndPoint(){
         return points.size() >= maxPointsCount;
     }
-
-
-    /*@Override
-    public void draw(Graphics g) {
-        // TODO Auto-generated method stub
-
-    }*/
 
 }

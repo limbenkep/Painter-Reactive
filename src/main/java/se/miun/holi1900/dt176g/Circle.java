@@ -66,7 +66,8 @@ public class Circle extends Shape {
             radius = "N/A";
         }
 
-        return "Circle [start=" + startPoint + "; end=" + endPoint + "; radius=" + radius + "; color=" + color + "]";
+        return "Circle [start=" + startPoint + "; end=" + endPoint + "; radius=" + radius + "; color="
+                + color + "; thickness=" + thickness + "]";
     }
 
 

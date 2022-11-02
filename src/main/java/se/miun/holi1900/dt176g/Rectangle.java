@@ -79,7 +79,8 @@ public class Rectangle extends Shape {
             width = "N/A";
         }
 
-        return "Rectangle [start=" + startPoint + "; end=" + endPoint + "; width=" + width + "; height=" + height + "; color=" + color + "]";
+        return "Rectangle [start=" + startPoint + "; end=" + endPoint + "; width=" + width + "; height="
+                + height + "; color=" + color + "; thickness=" + thickness + "]";
     }
 
     /**

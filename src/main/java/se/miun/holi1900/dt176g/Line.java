@@ -47,7 +47,7 @@ public class Line extends Shape{
         else{
             endPoint = "N/A";
         }
-        return "Line [start=" + startPoint + "; end=" + endPoint + "; color=" + color + "]";
+        return "Line [start=" + startPoint + "; end=" + endPoint + "; color=" + color + "; thickness=" + thickness + "]";
     }
 
     @Override
