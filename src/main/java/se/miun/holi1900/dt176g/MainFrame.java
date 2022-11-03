@@ -77,7 +77,7 @@ public class MainFrame extends JFrame {
                     .map(BufferedReader::new)
                     .map(BufferedReader::lines)
                     .flatMap(stream -> Observable.fromIterable(stream::iterator).subscribeOn(Schedulers.computation()))
-                    .map(s->ShapeConverter.stringToShape((String) s))
+                    .map(s->Utils.stringToShape((String) s))
                     .doOnDispose(()->socket.close())
                     .subscribeOn(Schedulers.io())
                     .subscribe(s-> {
