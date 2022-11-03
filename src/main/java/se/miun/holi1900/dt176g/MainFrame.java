@@ -1,22 +1,20 @@
 package se.miun.holi1900.dt176g;
-import io.reactivex.rxjava3.core.Flowable;
+
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
+import javax.swing.*;
+import javax.swing.plaf.DimensionUIResource;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import javax.swing.*;
-import javax.swing.plaf.DimensionUIResource;
 
 
 /**
@@ -43,12 +41,7 @@ public class MainFrame extends JFrame {
     private final List<Disposable> disposables = new ArrayList<>(); //store all disposables created to be disposed when exiting program
     private final List<Shape> shapes = new ArrayList<>();
 
-
     public MainFrame(String serverAddress, int serverPort) {
-
-        final BufferedWriter out;
-        final BufferedReader in;
-        //create socket and streams
 
         // default window-size.
         this.setSize(1200, 800);
@@ -63,9 +56,6 @@ public class MainFrame extends JFrame {
 
         initComponents();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        List<String> exitCommands = List.of("disconnect", "exit", "quit");
-
         //This updates the coordinates as the cursor is moved over the drawing area.
         Observable<MouseEvent> mouseMoved = mouseMovedObservable(drawingPanel);
         Disposable disposable2 = mouseMoved.subscribe(this::updateCoordinatesOnMouseMoved);
@@ -79,34 +69,26 @@ public class MainFrame extends JFrame {
 
         try{
             socket = new Socket(serverAddress, serverPort);
-            PrintWriter printer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
 
-            Observable.just(System.in)
-                    .subscribeOn(Schedulers.io())
-                    .doOnSubscribe(d -> System.out.println("Start drawing! (type 'exit' to disconnect)"))
+            final BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            Disposable inputStreamDisposable = Observable.just(socket)
+                    .map(Socket::getInputStream)
                     .map(InputStreamReader::new)
                     .map(BufferedReader::new)
                     .map(BufferedReader::lines)
-                    .flatMap(stream -> Observable.fromIterable(() -> stream.iterator()))
-                    .takeWhile(s -> !exitCommands.contains(s))
-                    .doFinally(() -> latch.countDown())
-                    .subscribe(printer::println, err -> System.err.println(err.getMessage()));
-
-
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            Disposable inputStreamDisposable = Observable.create(emitter -> {
-                while(true){
-                    emitter.onNext(in.readLine());
-                }
-            }).map(s->ShapeConverter.stringToShape((String) s))
+                    .flatMap(stream -> Observable.fromIterable(stream::iterator).subscribeOn(Schedulers.computation()))
+                    .map(s->ShapeConverter.stringToShape((String) s))
                     .doOnDispose(()->socket.close())
                     .subscribeOn(Schedulers.io())
                     .subscribe(s-> {
-                        drawingPanel.addShapeToDrawing(s);
-                        System.out.println("Broadcast shapes: " + s);
-                    },
-                            e-> System.out.println("Error: connection lost"));
+                                drawingPanel.addShapeToDrawing(s);
+                                //System.out.println("Broadcast shapes: " + s);
+                            },
+                            e-> {
+                        showNotification("Lost connection t0 server.");
+                        System.out.println("Lost connection t0 server.");
+
+                            });
             disposables.add(inputStreamDisposable);
 
             //This observable emits mouse dragged events and the subscribe observer draw the shape if the chosen
@@ -128,62 +110,17 @@ public class MainFrame extends JFrame {
                     out.newLine();
                 }
                 out.flush();
-                System.out.println("sent shape" + shapes);
+                //System.out.println("sent shape" + shapes);
                 shapes.clear(); //this prevents sending shapes multiple times. only newly drawn shapes are found here
                 lastPoint = null;
             });
             disposables.add(mousePressReleaseDisposable);
-
         } catch (IOException e) {
+            showNotification("Problem connecting to server. Check server connection and restart program.");
             System.out.println("Problem connecting to server.");
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
-
-        /*
-        try{
-            socket = new Socket(serverAddress, serverPort);
-            //ObjectOutputStream must be created first because
-            // ObjectInputStream blocks until corresponding ObjectOutputStream
-            //sends a header
-            outputStream = new ObjectOutputStream(socket.getOutputStream());
-            inputStream = new ObjectInputStream(socket.getInputStream());
-
-            Disposable myDisposable = myObservable.subscribeOn(Schedulers.io())
-                    .doOnNext(this::updateCoordinatesOnMouseMoved)
-                    .observeOn(Schedulers.io())
-                    //.toList()
-                    .subscribe(e->{
-                        drawFreeHandShape(e);
-                    });
-
-            Disposable disposable1 = mouseDraw.observeOn(Schedulers.io()).subscribe(list->{
-                drawShape(list.get(0), list.get(1));
-                outputStream.writeObject(shapes);
-                outputStream.flush();
-
-                System.out.println("sent shape" + shapes);
-                shapes.clear();
-                lastPoint = null;
-
-
-            });
-            disposables.add(disposable1);
-
-            //creates observable that observes incoming shapes sent through the socket
-            Observable.create(emitter -> {
-                while(true){
-                    //emitter.onNext(in.readLine());
-                    emitter.onNext(inputStream.readObject());
-                }
-            }).subscribeOn(Schedulers.io())//.map(o-> (Shape)o)
-                    .subscribe(s-> System.out.println("Broadcast shapes: " + s.toString()));
-
-
-        } catch (IOException e) {
-            System.out.println("Problem connecting to server.");
-        }
-         */
 
     }
 
@@ -386,6 +323,7 @@ public class MainFrame extends JFrame {
     public void disposeDisposables(){
         for(Disposable d: disposables){
             d.dispose();
+            System.out.println("disposing disposables");
         }
         toolBar.disposeDisposables();
         Schedulers.shutdown();
@@ -419,10 +357,12 @@ public class MainFrame extends JFrame {
         drawingPanel.setDrawing(new Drawing());
     }
 
-    public void deleteLastShape(){
-        Drawing drawing = drawingPanel.getDrawing();
-        drawing.removeLastShape();
-        drawingPanel.setDrawing(drawing);
-    }
+    /**
+     * displays error message to user
+     * @param message message to be displayed
+     */
+     private void showNotification(String message){
+        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+     }
 
 }
