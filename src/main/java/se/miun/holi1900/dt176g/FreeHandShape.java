@@ -16,7 +16,7 @@ public class FreeHandShape extends Shape{
     private String pointsToString(){
         String shapeString = points.get(0).toString();
         for(int i=1; i<points.size(); i++){
-            shapeString += "; ";
+            shapeString += ";";
             shapeString += points.get(i);
         }
         return shapeString;
@@ -36,12 +36,7 @@ public class FreeHandShape extends Shape{
 
     @Override
     public String toString() {
-        String shapeString = points.get(0).toString();
-        for(int i=1; i<points.size(); i++){
-            shapeString += ";";
-            shapeString += points.get(i);
-        }
-        return "FreeHand [Points=" + shapeString + "; color=" + getColor() + "; thickness=" + thickness + "]";
+        return "FreeHand [Points=" + pointsToString() + "; color=" + getColor() + "; thickness=" + thickness + "]";
     }
 
     @Override

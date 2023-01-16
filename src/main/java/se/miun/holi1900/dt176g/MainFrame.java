@@ -44,7 +44,7 @@ public class MainFrame extends JFrame {
     public MainFrame(String serverAddress, int serverPort) {
 
         // default window-size.
-        this.setSize(1200, 800);
+        this.setSize(600, 400);
         // application closes when the "x" in the upper-right corner is clicked.
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
