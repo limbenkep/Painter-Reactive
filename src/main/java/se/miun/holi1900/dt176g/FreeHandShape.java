@@ -3,6 +3,7 @@ package se.miun.holi1900.dt176g;
 import io.reactivex.rxjava3.core.Observable;
 
 import java.awt.*;
+import java.util.ArrayList;
 
 public class FreeHandShape extends Shape{
     public FreeHandShape(int x, int y, String color) {
@@ -21,16 +22,34 @@ public class FreeHandShape extends Shape{
         }
         return shapeString;
     }
+    public void addListOfPoints(ArrayList<Point> list){
+        this.points.addAll(list);
+    }
 
     @Override
     public void draw(Graphics g) {
-        Graphics2D g2 = (Graphics2D)g;
+        /*Graphics2D g2 = (Graphics2D)g;
         g2.setPaint(Color.decode(this.getColor()));
         g2.setStroke(new BasicStroke(thickness));
+        System.out.println("points Size " + points.size());
         if(points.size()>1){
             for(int i=0; i<points.size()-1; i++){
                 g2.drawLine(points.get(i).getX(),points.get(i).getY(), points.get(i+1).getX(), points.get(i+1).getY());
             }
+        }*/
+
+        ArrayList<Line> lines = new ArrayList<>();
+        if(points.size()>1){
+            System.out.println("points Size " + points.size());
+            for(int i=0; i<points.size()-1; i++){
+                Line line = new Line(points.get(i), color);
+                line.addPoint(points.get(i+1));
+                line.thickness = thickness;
+                lines.add(line);
+            }
+
+            Observable<Shape> shapesObservable = Observable.fromIterable(lines);
+            shapesObservable.subscribe(shape -> shape.draw(g));
         }
     }
 
