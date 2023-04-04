@@ -9,6 +9,7 @@
 package se.miun.holi1900.dt176g;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Objects;
 
 /**
@@ -36,27 +37,34 @@ public class Utils {
 	 * @return Shape
 	 */
 	public static Shape stringToShape(String shapeString){
-		String[] splits =  shapeString.trim().split(",");
+		String[] splits =  shapeString.trim().split("\\|");
+		String[] pointStrings = splits[1].split(";");
 		Shape shape = null;
 		try {
-			int startX = Integer.parseInt(splits[1]);
-			int startY = Integer.parseInt(splits[2]);
-			int endX = Integer.parseInt(splits[3]);
-			int endY = Integer.parseInt(splits[4]);
-			float thickness = Float.parseFloat(splits[6]);
-			Point startPoint = new Point(startX, startY);
-			Point endPoint = new Point(endX, endY);
+			ArrayList<Point> points = new ArrayList<>();
+			for(String s: pointStrings){
+				String[] axis = s.trim().replace("[","").replace("]","").split(",");
+				int x = Integer.parseInt(axis[0].trim());
+				int y = Integer.parseInt(axis[1].trim());
+				points.add(new Point(x,y));
+			}
+			float thickness = Float.parseFloat(splits[3]);
 			if(Objects.equals(splits[0], "Rectangle")){
-				shape = new Rectangle(startPoint, splits[5]);
+				shape = new Rectangle(points.get(0), splits[2]);
 			}
 			if(Objects.equals(splits[0], "Circle")){
-				shape = new Circle(startPoint, splits[5]);
+				shape = new Circle(points.get(0), splits[2]);
 			}
 			if(Objects.equals(splits[0], "Line")){
-				shape = new Line(startPoint, splits[5]);
+				shape = new Line(points.get(0), splits[2]);
+			}
+			if(Objects.equals(splits[0], "FreeHand")){
+				shape = new FreeHandShape(points.get(0), splits[2]);
 			}
 			if(shape!=null){
-				shape.addPoint(endPoint);
+				for(int i=1; i<points.size(); i++){
+					shape.addPoint(points.get(i));
+				}
 				shape.setThickness(thickness);
 			}
 		} catch (Exception e) {
@@ -65,3 +73,4 @@ public class Utils {
 		return shape;
 	}
 }
+

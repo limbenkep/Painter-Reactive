@@ -14,7 +14,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 
 
 /**
@@ -32,19 +31,15 @@ public class MainFrame extends JFrame {
     private DrawingPanel drawingPanel;
     private JPanel selectedColorPanel;
     private Color selectedColor;
-
     private JLabel currentCoordinateLabel; // Label for the panel displaying current coordinates
     private Point currentCoordinates; //current coordinates of the cursor which updates as mouse moves
-    private Point lastPoint; //Last point from the from freehand drawing
-
     private Shape currentShape; // current shape being drawn
     private final List<Disposable> disposables = new ArrayList<>(); //store all disposables created to be disposed when exiting program
-    private final List<Shape> shapes = new ArrayList<>();
 
     public MainFrame(String serverAddress, int serverPort) {
 
         // default window-size.
-        this.setSize(1200, 800);
+        this.setSize(600, 600);
         // application closes when the "x" in the upper-right corner is clicked.
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -63,7 +58,6 @@ public class MainFrame extends JFrame {
 
         Observable<MouseEvent> mousePressed = mousePressedObservable(drawingPanel);
         Observable<MouseEvent> mouseReleased = mouseReleasedObservable(drawingPanel);
-        Observable<List<MouseEvent>> mousePressAndRelease = mousePressedAndReleaseObservable(mousePressed, mouseReleased);
 
         Observable<MouseEvent> mouseDraggedObservable = createMouseDraggedObservable(drawingPanel);
 
@@ -77,7 +71,7 @@ public class MainFrame extends JFrame {
                     .map(BufferedReader::new)
                     .map(BufferedReader::lines)
                     .flatMap(stream -> Observable.fromIterable(stream::iterator).subscribeOn(Schedulers.computation()))
-                    .map(s->Utils.stringToShape((String) s))
+                    .map(Utils::stringToShape)
                     .doOnDispose(()->socket.close())
                     .subscribeOn(Schedulers.io())
                     .subscribe(s-> {
@@ -91,37 +85,33 @@ public class MainFrame extends JFrame {
                             });
             disposables.add(inputStreamDisposable);
 
-            //This observable emits mouse dragged events and the subscribe observer draw the shape if the chosen
-            //shape type is "freehand" and save shapes to shapes container to be sent on mouse released
-            Disposable mouseDraggedDisposable = mouseDraggedObservable.subscribeOn(Schedulers.io())
+
+            Disposable mousePressedDis = mousePressed.observeOn(Schedulers.io()).subscribe(this::createShape);
+
+            //This observable emits mouse dragged events and the subscribed observer adds the points to the currentShape
+            // if the chosen shape type is "freehand"
+            Disposable mousedraggedDis = mouseDraggedObservable.observeOn(Schedulers.io())
                     .doOnNext(this::updateCoordinatesOnMouseMoved)//Updates displayed coordinates as mouse is dragged
                     .observeOn(Schedulers.io())
-                    .subscribe(this::drawFreeHandShape);
-            disposables.add(mouseDraggedDisposable);
+                    .subscribe(this::addPointToFreeHandShape);
 
-            //This Observable emits an emission when a mouse is pressed and released.
-            //If the selected shape is a Line, Circle, or Rectangle, the subscribed observer
-            //draws the shape and store the shape in the shapes container
-            //All shapes in shapes container are sent to the server to be broadcast
-            Disposable mousePressReleaseDisposable = mousePressAndRelease.observeOn(Schedulers.io()).subscribe(list->{
-                drawShape(list.get(0), list.get(1));
-                for(Shape shape:shapes){
-                    out.write(shape.getInfoToBeSaved());
-                    out.newLine();
-                }
+            Disposable mouseReleasedDis = mouseReleased.observeOn(Schedulers.io()).subscribe(e->{
+                addShapeEndPoint(e);
+                out.write(currentShape.getInfoToBeSaved());
+                out.newLine();
                 out.flush();
-                //System.out.println("sent shape" + shapes);
-                shapes.clear(); //this prevents sending shapes multiple times. only newly drawn shapes are found here
-                lastPoint = null;
+                currentShape = null;
+
             });
-            disposables.add(mousePressReleaseDisposable);
+            disposables.add(mousePressedDis);
+            disposables.add(mouseReleasedDis);
+            disposables.add(mousedraggedDis);
+
         } catch (IOException e) {
             showNotification("Problem connecting to server. Check server connection and restart program.");
             System.out.println("Problem connecting to server.");
             //e.printStackTrace();
         }
-
-
     }
 
 
@@ -145,10 +135,10 @@ public class MainFrame extends JFrame {
         //Creates endPageBar and adds it to the MainFrame.
         //This displays the selected color and current coordinates of the cursor
         this.setJMenuBar(new Menu(this));
-        JPanel endPageBar = new JPanel(new BorderLayout());
+        //JPanel endPageBar = new JPanel(new BorderLayout());
         selectedColorPanelContainer = new JPanel();
         selectedColorPanelContainer.setLayout(new BoxLayout(selectedColorPanelContainer ,BoxLayout.X_AXIS));
-        endPageBar = new JPanel();
+        JPanel endPageBar = new JPanel();
         endPageBar.setLayout(new BoxLayout(endPageBar, BoxLayout.X_AXIS));
         currentCoordinates = new Point(0,0); //default coordinates is 0,0
         //Add cordinateLabel and selectedColorPanel to container enPageBar JPanel
@@ -176,56 +166,57 @@ public class MainFrame extends JFrame {
         selectedColorPanel.setBackground(color);
     }
 
-
     /**
-     * Draws shape from coordinate from mousePressed and mouseRelease events.
-     * Gets selected shape, color and thickness from toolbar and draw the selected shape
-     * Gets first coordinate from first passed event and second coordinate
-     * from second passed event.
-     * @param pressed mousePressed MouseEvent
-     * @param released mouseReleased MouseEvent
+     * Called on mousePressed.
+     * Creates a shape object corresponding to the chosen shape type on the toolbar
+     * using the coordinates ofo the event as the startPoint of the shape
+     * @param pressed MouseEvent
      */
-    private void drawShape(MouseEvent pressed, MouseEvent released){
+    private void createShape(MouseEvent pressed){
         Point p1 = new Point(pressed.getX(), pressed.getY());
         if (Objects.equals(toolBar.getSelectedShapeOption(), "Rectangle")) {
             currentShape = new Rectangle(p1, Utils.getHexColorString(selectedColor));
-        }else if (Objects.equals(toolBar.getSelectedShapeOption(), "Circle")) {
+        }
+        if (Objects.equals(toolBar.getSelectedShapeOption(), "Circle")) {
             currentShape = new Circle(p1, Utils.getHexColorString(selectedColor));
-        }else if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
+        }
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Line")){
             currentShape = new Line(p1, Utils.getHexColorString(selectedColor));
         }
-
-        if(!Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
-            Point p2 = new Point(released.getX(), released.getY());
-            currentShape.setThickness(toolBar.getSelectedThickness());
-            currentShape.addPoint(p2);
-            drawingPanel.addShapeToDrawing(currentShape);
-            shapes.add(currentShape);
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
+            currentShape = new FreeHandShape(p1, Utils.getHexColorString(selectedColor));
         }
     }
 
     /**
-     * Receives a MouseEvent gets x and y coordinates.
-     * If lastPoint is null the coordinates are set to lastPoint.
-     * If lastPoint is not null, a line is drawn from between last point and
-     * the coordinates of the event.
-     * The MouseEvent's coordinates is then set as to lastPoint
-     * @param e MouseEvent holding new coordinates
+     * Called on mouse release. Adds the last point of the shape and
+     * adds the shape to the drawingPanel to be drawn on the canvas.
+     * @param released MouseEvent
      */
-    private void drawFreeHandShape(MouseEvent e){
-
+    private void addShapeEndPoint(MouseEvent released){
+        Point p2 = new Point(released.getX(), released.getY());
+        currentShape.setThickness(toolBar.getSelectedThickness());
+        currentShape.addPoint(p2);
+        //This line fixes bug that causes a line to be drawn between the first and last point.
         if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
-            if (lastPoint != null) {
-                currentShape = new Line(lastPoint, Utils.getHexColorString(selectedColor));
-                currentShape.setThickness(toolBar.getSelectedThickness());
-                currentShape.addPoint(e.getX(), e.getY());
-                drawingPanel.addShapeToDrawing(currentShape);
-                shapes.add(currentShape);
-
-            }
-            lastPoint = new Point(e.getX(), e.getY());
+            String shape = currentShape.getInfoToBeSaved();
+            drawingPanel.addShapeToDrawing(Utils.stringToShape(shape));
+        }else{
+            drawingPanel.addShapeToDrawing(currentShape);
         }
     }
+
+    /**
+     * Called on mouse drag. The coordinates of the event are added to the
+     * shape if the chosen shape type o the toolbar is "Freehand
+     * @param dragged MouseEvent
+     */
+    private void addPointToFreeHandShape(MouseEvent dragged){
+        if(Objects.equals(toolBar.getSelectedShapeOption(), "Freehand")){
+            currentShape.addPoint(new Point(dragged.getX(), dragged.getY()));
+        }
+    }
+
 
     /**
      * updates the displayed current coordinates with point from passed MouseEvents
